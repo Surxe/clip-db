@@ -1,0 +1,50 @@
+# clip-db
+
+Tag, categorize, and query gaming clips. Controlled-vocabulary tagging where an LLM
+maps a short free-text description onto a fixed tag list (`tags.json`) — no fuzzy
+matching, no frame/audio AI. Batch tagging is a script; querying is a local MCP.
+
+Two projects over one shared core:
+
+```
+clip_core/            # shared: config, tags vocab, sqlite index, media I/O, llm_classify, query
+clip-tagger/          # ingest.py — batch: intake move + tag/categorize
+clip-viewer-mcp/      # server.py — stdio MCP: query + retrieval
+```
+
+## Clip flow
+
+1. Record on Windows or Linux. A separate (user-owned) step drops clips into the
+   shared staging dir `os-shared/transfer/clips/` (`/mnt/os-shared/transfer/clips` on Linux).
+2. `clip-tagger/ingest.py` moves each **master** out of staging into the ext4 library,
+   probes metadata, classifies the description against the vocab, and writes an index row.
+   Masters are `*.mp4` excluding `*_merged.mp4`; merged files are regenerable build output.
+3. `clip-viewer-mcp/server.py` exposes query + retrieval tools to an MCP client (Claude Code).
+
+## Asset model
+
+One logical asset per clip: a split-audio **master** (source of truth) plus an optional
+regenerable `*_merged.mp4`, linked by filename stem (`clip123.mp4` ↔ `clip123_merged.mp4`
+→ asset `clip123`). Tagged once, on the master. Tags live in a rebuildable SQLite index
+(optionally embedded in the master via ExifTool).
+
+## Setup
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -U pip
+.venv/bin/pip install -r requirements-dev.txt   # runtime + pytest
+cp .env.example .env                            # then edit paths
+.venv/bin/pytest
+```
+
+Paths are configured entirely via `.env` (see `.env.example`) so the repo stays generic.
+`ANTHROPIC_API_KEY` is resolved from the environment or an `ant auth login` profile.
+
+## Usage
+
+```bash
+.venv/bin/python clip-tagger/ingest.py --dry-run          # preview intake
+.venv/bin/python clip-tagger/ingest.py --description "1v4 retake for the round"
+.venv/bin/python clip-viewer-mcp/server.py                # run the MCP over stdio
+```

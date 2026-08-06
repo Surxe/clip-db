@@ -21,6 +21,16 @@ clip-viewer-mcp/      # server.py — stdio MCP: query + retrieval
    Masters are `*.mp4` excluding `*_merged.mp4`; merged files are regenerable build output.
 3. `clip-viewer-mcp/server.py` exposes query + retrieval tools to an MCP client (Claude Code).
 
+## Tags
+
+The vocabulary in `tags.json` has two tiers: **generic** tags (cross-game: `clutch`,
+`fail`, …) and **game** tags, where the game's display name is a tag and each
+weapon/module/ability is a tag, organised into readability groups whose labels are
+*not* tags. The classifier is constrained to this list. See **[docs/tags.md](docs/tags.md)**
+for the model, how the reader flattens/renders it, and how to add a new game.
+War Robots Frontiers tags are regenerated from source via
+`scripts/extract_wrf_tags.py`.
+
 ## Asset model
 
 One logical asset per clip: a split-audio **master** (source of truth) plus an optional

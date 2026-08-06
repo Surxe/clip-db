@@ -14,6 +14,9 @@ SYSTEM = (
     "You map a short free-text description of a gaming clip onto a fixed controlled "
     "vocabulary of tags. Choose only tags from the provided list that genuinely apply "
     "(use meaning, not string overlap: '1v4 retake' -> clutch, 'whiffed everything' -> fail). "
+    "The vocabulary is organised into generic tags and per-game sections; when a clip is "
+    "from a game, tag it with that game's name plus any specific weapons/modules/abilities "
+    "shown. Group headings (weapons, modules, abilities) are organisation only, not tags. "
     "Do not invent tags. Only if nothing in the vocabulary fits, set proposed_tag to a single "
     "concise new tag; otherwise proposed_tag is null."
 )
@@ -59,7 +62,7 @@ def llm_classify(
     resp = client.messages.create(
         model=model,
         max_tokens=1024,
-        system=f"{SYSTEM}\n\nVocabulary: {', '.join(vocab)}",
+        system=f"{SYSTEM}\n\n# Vocabulary\n{vocab.to_markdown()}",
         output_config={"format": {"type": "json_schema", "schema": build_schema(vocab)}},
         messages=[{"role": "user", "content": f"Description: {description}"}],
     )

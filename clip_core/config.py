@@ -33,5 +33,5 @@ def load_config() -> Config:
         library_dir=_path("CLIP_LIBRARY_DIR", "/srv/dev/clips/library"),
         index_path=_path("CLIP_INDEX_PATH", "/srv/dev/clips/index.sqlite"),
         tags_path=_path("CLIP_TAGS_PATH", "tags.json"),
-        model=os.getenv("CLIP_MODEL", "claude-opus-5"),
+        model=os.getenv("CLIP_MODEL", "claude-sonnet-4-5"),
     )

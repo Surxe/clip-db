@@ -1,38 +1,31 @@
-import json
-from types import SimpleNamespace
-
 from clip_core.classify import build_schema, llm_classify
 from clip_core.tags import TagVocab
 
 
-class _FakeMessages:
+class _FakeRunner:
+    """Stand-in for the `claude` CLI: records the call kwargs, returns a fixed payload."""
+
     def __init__(self, payload):
         self._payload = payload
         self.kwargs = None
 
-    def create(self, **kwargs):
+    def __call__(self, **kwargs):
         self.kwargs = kwargs
-        text = json.dumps(self._payload)
-        return SimpleNamespace(content=[SimpleNamespace(type="text", text=text)])
-
-
-class _FakeClient:
-    def __init__(self, payload):
-        self.messages = _FakeMessages(payload)
+        return self._payload
 
 
 def test_maps_description_to_vocab():
     vocab = TagVocab(["clutch", "fail", "ace"])
-    client = _FakeClient({"tags": ["clutch", "ace"], "proposed_tag": None})
-    result = llm_classify("1v4 retake for the round", vocab, client=client)
+    runner = _FakeRunner({"tags": ["clutch", "ace"], "proposed_tag": None})
+    result = llm_classify("1v4 retake for the round", vocab, runner=runner)
     assert result.tags == ["clutch", "ace"]
     assert result.proposed_tag is None
 
 
 def test_proposes_new_tag_when_nothing_fits():
     vocab = TagVocab(["clutch"])
-    client = _FakeClient({"tags": [], "proposed_tag": "pentakill"})
-    result = llm_classify("a wild new thing", vocab, client=client)
+    runner = _FakeRunner({"tags": [], "proposed_tag": "pentakill"})
+    result = llm_classify("a wild new thing", vocab, runner=runner)
     assert result.tags == []
     assert result.proposed_tag == "pentakill"
 
@@ -44,9 +37,10 @@ def test_schema_enum_reflects_vocab():
     assert schema["additionalProperties"] is False
 
 
-def test_passes_model_and_constrained_format():
+def test_passes_model_and_constrained_schema():
     vocab = TagVocab(["clutch"])
-    client = _FakeClient({"tags": ["clutch"], "proposed_tag": None})
-    llm_classify("x", vocab, client=client, model="claude-test")
-    assert client.messages.kwargs["model"] == "claude-test"
-    assert client.messages.kwargs["output_config"]["format"]["type"] == "json_schema"
+    runner = _FakeRunner({"tags": ["clutch"], "proposed_tag": None})
+    llm_classify("x", vocab, runner=runner, model="claude-test")
+    assert runner.kwargs["model"] == "claude-test"
+    assert runner.kwargs["schema"]["properties"]["tags"]["items"]["enum"] == ["clutch"]
+    assert runner.kwargs["prompt"] == "Description: x"

@@ -1,11 +1,15 @@
 """Constrained LLM classification: map a free-text description onto the tag vocabulary.
 
-A single Anthropic call with a JSON-schema-constrained response whose `tags` field is an
-enum of the controlled vocabulary. Proposes at most one new tag only if nothing fits.
+A single `claude` CLI call (Claude Code in print mode) with a JSON-schema-constrained
+response whose `tags` field is an enum of the controlled vocabulary. Proposes at most one
+new tag only if nothing fits. Running through the `claude` CLI means classification bills
+against the logged-in Claude subscription rather than the metered Anthropic API — the CLI
+must be installed and authenticated (`claude` on PATH).
 """
 from __future__ import annotations
 
 import json
+import subprocess
 from dataclasses import dataclass
 
 from .tags import TagVocab
@@ -46,26 +50,52 @@ def build_schema(vocab: TagVocab) -> dict:
     }
 
 
+def _claude_cli_runner(*, prompt: str, system: str, schema: dict, model: str) -> dict:
+    """Default runner: one non-interactive `claude` call, returning the structured output dict.
+
+    `--allowed-tools NONE` keeps it a single-shot classifier — no agentic tool loop or
+    filesystem access, just the schema-constrained answer. The JSON envelope carries the
+    already-parsed result under `structured_output` (falling back to the `result` string).
+    """
+    cmd = [
+        "claude",
+        "-p",
+        "--allowed-tools",
+        "NONE",
+        "--model",
+        model,
+        "--output-format",
+        "json",
+        "--json-schema",
+        json.dumps(schema),
+        "--system-prompt",
+        system,
+    ]
+    proc = subprocess.run(cmd, input=prompt, text=True, capture_output=True, check=True)
+    envelope = json.loads(proc.stdout)
+    if envelope.get("is_error"):
+        raise RuntimeError(f"claude CLI classification failed: {envelope.get('result')!r}")
+    out = envelope.get("structured_output")
+    if out is None:
+        out = json.loads(envelope["result"])
+    return out
+
+
 def llm_classify(
     description: str,
     vocab: TagVocab,
     *,
-    client=None,
-    model: str = "claude-opus-5",
+    runner=None,
+    model: str = "claude-sonnet-4-5",
 ) -> Classification:
-    """Classify one description. Pass `client` to inject a stub (tests); default is a real client."""
-    if client is None:
-        import anthropic
+    """Classify one description. Pass `runner` to inject a stub (tests); default shells out to `claude`."""
+    if runner is None:
+        runner = _claude_cli_runner
 
-        client = anthropic.Anthropic()
-
-    resp = client.messages.create(
-        model=model,
-        max_tokens=1024,
+    data = runner(
+        prompt=f"Description: {description}",
         system=f"{SYSTEM}\n\n# Vocabulary\n{vocab.to_markdown()}",
-        output_config={"format": {"type": "json_schema", "schema": build_schema(vocab)}},
-        messages=[{"role": "user", "content": f"Description: {description}"}],
+        schema=build_schema(vocab),
+        model=model,
     )
-    text = next(b.text for b in resp.content if b.type == "text")
-    data = json.loads(text)
     return Classification(tags=data.get("tags", []), proposed_tag=data.get("proposed_tag"))

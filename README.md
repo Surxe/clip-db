@@ -49,7 +49,10 @@ cp .env.example .env                            # then edit paths
 ```
 
 Paths are configured entirely via `.env` (see `.env.example`) so the repo stays generic.
-`ANTHROPIC_API_KEY` is resolved from the environment or an `ant auth login` profile.
+Classification runs through the **`claude` CLI** (Claude Code in print mode), so it bills
+against your logged-in Claude subscription — no Anthropic API key. The CLI must be on `PATH`
+and authenticated (run `claude` once to log in). `CLIP_MODEL` (default `claude-sonnet-4-5`)
+accepts any id/alias `claude --model` takes.
 
 ## Usage
 

@@ -15,6 +15,7 @@ class Clip:
     game: str | None = None
     date: str | None = None
     duration: float | None = None
+    description: str | None = None
     tags: list[str] = field(default_factory=list)
 
 
@@ -34,20 +35,22 @@ def _row_to_clip(row: sqlite3.Row) -> Clip:
         game=row["game"],
         date=row["date"],
         duration=row["duration"],
+        description=row["description"],
         tags=_tags_to_list(row["tags"]),
     )
 
 
 def upsert_clip(conn: sqlite3.Connection, clip: Clip) -> None:
     conn.execute(
-        """INSERT INTO clips(stem, master_path, merged_path, game, date, duration, tags)
-           VALUES(?,?,?,?,?,?,?)
+        """INSERT INTO clips(stem, master_path, merged_path, game, date, duration, description, tags)
+           VALUES(?,?,?,?,?,?,?,?)
            ON CONFLICT(stem) DO UPDATE SET
              master_path=excluded.master_path,
              merged_path=excluded.merged_path,
              game=excluded.game,
              date=excluded.date,
              duration=excluded.duration,
+             description=excluded.description,
              tags=excluded.tags""",
         (
             clip.stem,
@@ -56,6 +59,7 @@ def upsert_clip(conn: sqlite3.Connection, clip: Clip) -> None:
             clip.game,
             clip.date,
             clip.duration,
+            clip.description,
             _tags_to_str(clip.tags),
         ),
     )

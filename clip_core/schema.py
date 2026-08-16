@@ -12,10 +12,23 @@ CREATE TABLE IF NOT EXISTS clips (
     game        TEXT,
     date        TEXT,
     duration    REAL,
+    description TEXT,                       -- the one-line source description (nullable)
     tags        TEXT NOT NULL DEFAULT ''   -- comma-separated, normalized
 );
 CREATE INDEX IF NOT EXISTS idx_clips_game ON clips(game);
 """
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    """Additive migrations for indexes created before a column existed.
+
+    CREATE TABLE IF NOT EXISTS never alters an existing table, so a pre-existing
+    index.sqlite needs the column added explicitly. Idempotent: only adds what's missing.
+    """
+    have = {row["name"] for row in conn.execute("PRAGMA table_info(clips)")}
+    if "description" not in have:
+        conn.execute("ALTER TABLE clips ADD COLUMN description TEXT")
+        conn.commit()
 
 
 def connect(index_path) -> sqlite3.Connection:
@@ -25,4 +38,5 @@ def connect(index_path) -> sqlite3.Connection:
     conn = sqlite3.connect(str(p))
     conn.row_factory = sqlite3.Row
     conn.executescript(SCHEMA)
+    _migrate(conn)
     return conn

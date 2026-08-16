@@ -16,6 +16,7 @@ class Config:
     library_dir: Path
     index_path: Path
     tags_path: Path
+    descriptions_path: Path
     model: str
 
 
@@ -28,10 +29,12 @@ def _path(env: str, default: str) -> Path:
 
 def load_config() -> Config:
     load_dotenv(override=False)  # populate os.environ from repo .env if present
+    intake_dir = _path("CLIP_INTAKE_DIR", "/mnt/os-shared/transfer/clips")
     return Config(
-        intake_dir=_path("CLIP_INTAKE_DIR", "/mnt/os-shared/transfer/clips"),
+        intake_dir=intake_dir,
         library_dir=_path("CLIP_LIBRARY_DIR", "/srv/dev/clips/library"),
         index_path=_path("CLIP_INDEX_PATH", "/srv/dev/clips/index.sqlite"),
         tags_path=_path("CLIP_TAGS_PATH", "tags.json"),
+        descriptions_path=_path("CLIP_DESCRIPTIONS_PATH", str(intake_dir / "descriptions.json")),
         model=os.getenv("CLIP_MODEL", "claude-sonnet-4-5"),
     )

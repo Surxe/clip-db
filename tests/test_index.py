@@ -1,3 +1,5 @@
+import sqlite3
+
 from clip_core import index
 from clip_core.schema import connect
 
@@ -11,6 +13,7 @@ def test_upsert_and_get_roundtrip():
         game="valorant",
         date="2026-08-04",
         duration=12.5,
+        description="1v4 retake for the round",
         tags=["clutch", "valorant"],
     )
     index.upsert_clip(conn, clip)
@@ -21,7 +24,33 @@ def test_upsert_and_get_roundtrip():
     assert got.merged_path == "/lib/clip123_merged.mp4"
     assert got.game == "valorant"
     assert got.duration == 12.5
+    assert got.description == "1v4 retake for the round"
     assert got.tags == ["clutch", "valorant"]
+
+
+def test_migration_adds_description_to_legacy_table(tmp_path):
+    """A pre-existing index without the description column gets it added on connect."""
+    db = tmp_path / "legacy.sqlite"
+    raw = sqlite3.connect(db)
+    raw.executescript(
+        """CREATE TABLE clips (
+               stem TEXT PRIMARY KEY, master_path TEXT NOT NULL, merged_path TEXT,
+               game TEXT, date TEXT, duration REAL, tags TEXT NOT NULL DEFAULT ''
+           );"""
+    )
+    raw.execute("INSERT INTO clips(stem, master_path, tags) VALUES('old', '/old.mp4', 'clutch')")
+    raw.commit()
+    raw.close()
+
+    conn = connect(db)  # runs the migration
+    cols = {row["name"] for row in conn.execute("PRAGMA table_info(clips)")}
+    assert "description" in cols
+    got = index.get_clip(conn, "old")
+    assert got.description is None
+    assert got.tags == ["clutch"]
+
+    index.upsert_clip(conn, index.Clip(stem="old", master_path="/old.mp4", description="now described"))
+    assert index.get_clip(conn, "old").description == "now described"
 
 
 def test_upsert_is_idempotent_on_stem():

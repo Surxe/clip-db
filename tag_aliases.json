@@ -64,7 +64,8 @@
         "Stormpike": ["storm"],
         "Trebuchet": ["treb"],
         "Parasite Protocol": ["parasite"],
-        "Chemical Hazard": ["chem haz", "chem hazard"]
+        "Chemical Hazard": ["chem haz", "chem hazard"],
+        "movement tech": ["goblin", "wave dash", "wave", "surf dash", "surf", "ramp dash"]
       }
     }
   }

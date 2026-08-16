@@ -79,6 +79,9 @@
         "Nanite Repair": [
           "nanite repair",
           "heal tank"
+        ],
+        "Repulsor": [
+          "movement tech"
         ]
       }
     }

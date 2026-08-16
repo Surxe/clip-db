@@ -47,6 +47,8 @@ def env(tmp_path, monkeypatch):
         library_dir=library,
         index_path=tmp_path / "index.sqlite",
         tags_path=tags_path,
+        aliases_path=tmp_path / "tag_aliases.json",
+        implications_path=tmp_path / "tag_implications.json",
         descriptions_path=desc_path,
         model="claude-test",
     )
@@ -56,7 +58,7 @@ def env(tmp_path, monkeypatch):
     monkeypatch.setattr(
         mod,
         "llm_classify_batch",
-        lambda items, vocab, model: {
+        lambda items, vocab, relations=None, model=None: {
             "a": Classification(tags=["clutch"], proposed_tag=None),
             "b": Classification(tags=[], proposed_tag="meltdown"),
         },

@@ -5,8 +5,11 @@ This encodes the WRF extraction logic documented in docs/tags.md so the game's t
 lists can be regenerated when the game updates, rather than hand-maintained.
 
   weapons:       Ready modules whose module_type_ref contains "Weapon"
-  modules:       Ready modules, everything else (chassis/torso/shoulder/ability/titan)
+  modules:       Ready modules of type chassis/torso/shoulder/Titan (robot parts). Ability-slot
+                 gadget modules are excluded -- their name equals the ability they grant, which
+                 is already listed under abilities (avoids the modules/abilities duplicate).
   abilities:     all abilities (no production_status filter) -- includes each torso's ability
+                 and every ability-slot gadget (Umbrella, Repulsor, ...)
   pilot talents: all pilot talents (no production_status filter)
   excluded:      "Mk. I" / "Mk. II" variant names
   names:         each entry's name.en; groups are distinct + sorted
@@ -58,8 +61,17 @@ def extract(objects_dir: Path) -> dict:
         name = _name_en(entry)
         if not name or MK_VARIANT.search(name):
             continue
-        bucket = weapons if "Weapon" in (entry.get("module_type_ref") or "") else other_modules
-        bucket.append(name)
+        module_type = entry.get("module_type_ref") or ""
+        if "Weapon" in module_type:
+            weapons.append(name)
+        elif "Ability" in module_type:
+            # Ability-slot gadget: its module name is identical to the ability it
+            # grants, which is already emitted from Ability.json into the abilities
+            # group. Listing it here too would duplicate it, so modules stays the
+            # robot chassis/torso/shoulder/Titan parts only.
+            continue
+        else:
+            other_modules.append(name)
 
     ability_names = [_name_en(e) for e in abilities.values()]
     talent_names = [_name_en(e) for e in talents.values()]
@@ -93,7 +105,10 @@ def main() -> None:
     if args.merge:
         path = Path(args.merge)
         data = json.loads(path.read_text())
-        data.setdefault("games", {})[GAME_NAME] = block
+        # Refresh only the generated groups; preserve any hand-maintained groups
+        # (e.g. effect tags) added to the game block so they survive a re-extract.
+        game = data.setdefault("games", {}).setdefault(GAME_NAME, {})
+        game.setdefault("groups", {}).update(block["groups"])
         path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
         print(f"merged into {path}: {counts}")
     else:

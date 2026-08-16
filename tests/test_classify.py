@@ -1,5 +1,12 @@
 from clip_core.classify import build_batch_schema, build_schema, llm_classify, llm_classify_batch
+from clip_core.relations import TagRelations
 from clip_core.tags import TagVocab
+
+_REL = TagRelations(
+    aliases={"snaketrap": "snake catcher", "cage": "snake catcher", "trap": "snake catcher"},
+    implications={"snake catcher": ["garuda"]},
+    alias_groups={"snake catcher": ["snaketrap", "cage", "trap"]},
+)
 
 
 class _FakeRunner:
@@ -32,6 +39,38 @@ def test_maps_description_to_vocab():
     result = llm_classify("1v4 retake for the round", vocab, runner=runner)
     assert result.tags == ["clutch", "ace"]
     assert result.proposed_tag is None
+
+
+def test_relations_expand_ability_to_module():
+    vocab = TagVocab(["snake catcher", "garuda", "clutch"])
+    runner = _FakeRunner({"tags": ["snake catcher", "clutch"], "proposed_tag": None})
+    result = llm_classify("energy cage trap", vocab, runner=runner, relations=_REL)
+    assert result.tags == ["snake catcher", "garuda", "clutch"]
+
+
+def test_relations_inject_nickname_hints_into_prompt():
+    vocab = TagVocab(["snake catcher", "garuda"])
+    runner = _FakeRunner({"tags": [], "proposed_tag": None})
+    llm_classify("x", vocab, runner=runner, relations=_REL)
+    assert "snake catcher: snaketrap, cage, trap" in runner.kwargs["system"]
+
+
+def test_no_relations_leaves_tags_untouched():
+    vocab = TagVocab(["snake catcher", "garuda"])
+    runner = _FakeRunner({"tags": ["snake catcher"], "proposed_tag": None})
+    result = llm_classify("x", vocab, runner=runner)  # relations default None
+    assert result.tags == ["snake catcher"]  # no expansion
+
+
+def test_batch_applies_relations():
+    vocab = TagVocab(["snake catcher", "garuda", "clutch"])
+    runner = _FakeRunner({"results": [
+        {"id": "a", "tags": ["snake catcher"], "proposed_tag": None},
+        {"id": "b", "tags": ["clutch"], "proposed_tag": None},
+    ]})
+    out = llm_classify_batch([("a", "cage"), ("b", "1v4")], vocab, runner=runner, relations=_REL)
+    assert out["a"].tags == ["snake catcher", "garuda"]
+    assert out["b"].tags == ["clutch"]
 
 
 def test_proposes_new_tag_when_nothing_fits():

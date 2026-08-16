@@ -59,6 +59,50 @@ memory from `tags.json`; it is never a hand-maintained artifact.
 
 `load_vocab` also still accepts the legacy `{"tags": [...]}` and bare-list shapes.
 
+## Tag relations (aliases + implications)
+
+On top of the flat vocabulary, two optional relation files add *dynamic tag
+context*. They are applied by `clip_core.relations.TagRelations` at **classify
+time only**, so they affect newly ingested clips and never rewrite existing ones.
+`resolve()` runs them in order — normalize aliases, then expand implications:
+
+### Aliases — [`tag_aliases.json`](../tag_aliases.json)
+Community nicknames that map to one canonical vocab tag. **This is the file to
+view/edit to see the current aliases.** An alias is never itself a tag (it's not
+in the enum); it only resolves *to* a canonical tag, and its nicknames are also
+shown to the classifier as prompt hints so it recognises them in a description.
+
+```json
+{ "games": { "War Robots Frontiers": {
+    "aliases": { "Snake Catcher": ["snaketrap", "cage", "trap"] } } } }
+```
+Keyed **canonical -> [nicknames]** (reads as "Snake Catcher's nicknames are …").
+
+### Implications — [`tag_implications.json`](../tag_implications.json)
+A tag implies one or more others (one-directional — tagging the target never adds
+the source back). Two sub-maps in this file, both consumed together:
+
+- **`ability_to_module`** — each torso ability adds its module (`snake catcher` ->
+  `garuda`). **Generated from game data, not hand-typed** — run
+  [`scripts/extract_wrf_implications.py`](../scripts/extract_wrf_implications.py)
+  (asserts strictly one-to-one; fails if a game update breaks that). Regenerate on
+  a game update alongside the tag refresh.
+- **`ability_implies`** — hand-maintained effect implications, one-to-many
+  (`optical camo` -> `stealth`, `invis`, `camo`). Edit this by hand.
+
+The extractor only rewrites `ability_to_module`, so `ability_implies` is
+**refresh-safe** (preserved across re-extraction).
+
+### Effect tags (hand-maintained groups)
+The implication targets above (`stealth`, `reveal`, `silence`, `bubble`, …) are
+themselves tags, grouped by hand under the WRF block (`concealment`,
+`status effects`, `support fields`). `extract_wrf_tags.py` refreshes only the four
+generated groups (weapons/modules/abilities/pilot talents), so these manual groups
+are **refresh-safe** too. Add new effect tags directly to `tags.json`.
+
+Both files are wired through config (`CLIP_ALIASES_PATH`, `CLIP_IMPLICATIONS_PATH`)
+and consumed by `ingest.py`; a missing file simply disables that mechanism.
+
 ## Normalization / constraints
 
 - Tags are normalized to `strip().lower()` everywhere (vocab, index, query), so
@@ -94,9 +138,11 @@ The underlying extractor is [`scripts/extract_wrf_tags.py`](../scripts/extract_w
 
 - **Source:** `current/Objects/Module.json`, `Ability.json`, and `PilotTalent.json`.
 - **Name field:** each entry's `name.en`.
-- **Modules:** only `production_status == "Ready"`. Split by `module_type_ref`:
-  contains `"Weapon"` → **weapons** group; otherwise → **modules** group
-  (chassis / torso / shoulder / ability-slot / Titan body parts).
+- **Modules:** only `production_status == "Ready"`, split by `module_type_ref`:
+  contains `"Weapon"` → **weapons** group; contains `"Ability"` → **excluded** (an
+  ability-slot gadget's module name equals the ability it grants, already listed
+  under abilities — so it is not duplicated here); everything else → **modules**
+  group (robot chassis / torso / shoulder / Titan body parts).
 - **Abilities:** all entries, no status filter → **abilities** group. This already
   covers every torso's granted ability (e.g. the Garuda torso's ability is officially
   *Snake Catcher*, which lands here) — the community nicknames for those abilities

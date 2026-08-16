@@ -25,6 +25,7 @@ from clip_core import descriptions, index, media
 from clip_core import tags as tagmod
 from clip_core.classify import llm_classify_batch
 from clip_core.config import load_config
+from clip_core.relations import TagRelations
 from clip_core.schema import connect
 
 _DATE_RE = re.compile(r"(\d{4}-\d{2}-\d{2})")
@@ -45,6 +46,7 @@ def main() -> None:
 
     cfg = load_config()
     vocab = tagmod.load_vocab(cfg.tags_path)
+    relations = TagRelations.load(cfg.aliases_path, cfg.implications_path)
     conn = connect(cfg.index_path)
     manifest = descriptions.load(cfg.descriptions_path)
 
@@ -66,7 +68,7 @@ def main() -> None:
 
     # One batched classification for everything that has a description.
     items = [(media.stem_of(m), manifest[media.stem_of(m)]) for m in described]
-    classified = llm_classify_batch(items, vocab, model=cfg.model) if items else {}
+    classified = llm_classify_batch(items, vocab, relations=relations, model=cfg.model) if items else {}
 
     proposals: dict[str, str] = {}
     for m in ingest_masters:

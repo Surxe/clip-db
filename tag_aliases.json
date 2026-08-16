@@ -19,7 +19,7 @@
         "Hunter's Mark": ["mark"],
         "Infinite Ammo": ["inf ammo"],
         "Iron Veil": ["veil"],
-        "Kinetic Pulse": ["pulse"],
+        "Kinetic Pulse": ["pulse", "kinetic knockback"],
         "Minefield": ["mines"],
         "Paladin's Ward": ["ward"],
         "Reflector": ["reflect"],
@@ -44,7 +44,7 @@
         "Supply Surge": ["surge"],
         "Suppressor": ["suppress"],
         "Winged Drone": ["hitcher damage"],
-        "Camouflage Web": ["web", "anansi cloak", "anansi invis"],
+        "Camouflage Web": ["web", "anansi cloak", "anansi invis", "camo"],
         "Optical Camo": ["pursuer cloak", "pursuer invis", "pursuer camo"],
         "Bulgasari": ["bulg", "bulga"],
         "Relic Bulgasari": ["relic bulga"],
@@ -62,7 +62,9 @@
         "Relic Thunder": ["relic thund"],
         "Shocktrain": ["shock"],
         "Stormpike": ["storm"],
-        "Trebuchet": ["treb"]
+        "Trebuchet": ["treb"],
+        "Parasite Protocol": ["parasite"],
+        "Chemical Hazard": ["chem haz", "chem hazard"]
       }
     }
   }

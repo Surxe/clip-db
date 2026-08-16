@@ -73,7 +73,12 @@
           "bubble"
         ],
         "Nanite Field": [
-          "nanite"
+          "nanite",
+          "heal tank"
+        ],
+        "Nanite Repair": [
+          "nanite repair",
+          "heal tank"
         ]
       }
     }

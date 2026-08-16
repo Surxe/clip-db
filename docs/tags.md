@@ -81,8 +81,16 @@ No code changes are required to add a game — the reader is data-driven.
 
 ### War Robots Frontiers specifics
 The WRF lists are extracted from the `WRFrontiersDB-Data` repo, not hand-typed, so
-they can be regenerated when the game updates. See
-[`scripts/extract_wrf_tags.py`](../scripts/extract_wrf_tags.py). The extraction logic:
+they can be regenerated when the game updates.
+
+**On a game update, rerun [`scripts/refresh_wrf_tags.py`](../scripts/refresh_wrf_tags.py)** —
+the turnkey wrapper that pulls the source data (`--no-pull` to skip), regenerates the
+block via `extract_wrf_tags.py --merge`, prints the per-group tag delta (what was
+added/removed), and runs pytest (`--no-tests` to skip). Then review the `tags.json`
+diff and commit.
+
+The underlying extractor is [`scripts/extract_wrf_tags.py`](../scripts/extract_wrf_tags.py)
+(usable standalone; prints the block to stdout without `--merge`). The extraction logic:
 
 - **Source:** `current/Objects/Module.json` and `current/Objects/Ability.json`.
 - **Name field:** each entry's `name.en`.

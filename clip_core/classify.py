@@ -12,6 +12,7 @@ import json
 import subprocess
 from dataclasses import dataclass
 
+from .relations import TagRelations
 from .tags import TagVocab
 
 SYSTEM = (
@@ -106,24 +107,42 @@ def _claude_cli_runner(*, prompt: str, system: str, schema: dict, model: str) ->
     return out
 
 
+def _build_system(vocab: TagVocab, relations: TagRelations | None, extra: str = "") -> str:
+    system = f"{SYSTEM}{extra}\n\n# Vocabulary\n{vocab.to_markdown()}"
+    hints = relations.hint_markdown() if relations else ""
+    return f"{system}\n\n{hints}" if hints else system
+
+
+def _resolve(tags: list[str], relations: TagRelations | None) -> list[str]:
+    return relations.resolve(tags) if relations else tags
+
+
 def llm_classify(
     description: str,
     vocab: TagVocab,
     *,
     runner=None,
+    relations: TagRelations | None = None,
     model: str = "claude-sonnet-4-5",
 ) -> Classification:
-    """Classify one description. Pass `runner` to inject a stub (tests); default shells out to `claude`."""
+    """Classify one description. Pass `runner` to inject a stub (tests); default shells out to `claude`.
+
+    When `relations` is given, the model's tags are run through it: nicknames map to
+    their canonical tag and each torso ability expands to also include its module.
+    """
     if runner is None:
         runner = _claude_cli_runner
 
     data = runner(
         prompt=f"Description: {description}",
-        system=f"{SYSTEM}\n\n# Vocabulary\n{vocab.to_markdown()}",
+        system=_build_system(vocab, relations),
         schema=build_schema(vocab),
         model=model,
     )
-    return Classification(tags=data.get("tags", []), proposed_tag=data.get("proposed_tag"))
+    return Classification(
+        tags=_resolve(data.get("tags", []), relations),
+        proposed_tag=data.get("proposed_tag"),
+    )
 
 
 BATCH_SYSTEM = (
@@ -143,6 +162,7 @@ def llm_classify_batch(
     vocab: TagVocab,
     *,
     runner=None,
+    relations: TagRelations | None = None,
     model: str = "claude-sonnet-4-5",
     chunk_size: int = 25,
 ) -> dict[str, Classification]:
@@ -150,10 +170,11 @@ def llm_classify_batch(
 
     Returns a dict keyed by id. Ids the model omits map to an empty Classification, so the
     caller always gets an entry for every input id. Pass `runner` to inject a stub (tests).
+    When `relations` is given, each result's tags are alias-normalized and implication-expanded.
     """
     if runner is None:
         runner = _claude_cli_runner
-    system = f"{SYSTEM}{BATCH_SYSTEM}\n\n# Vocabulary\n{vocab.to_markdown()}"
+    system = _build_system(vocab, relations, extra=BATCH_SYSTEM)
     schema = build_batch_schema(vocab)
 
     results: dict[str, Classification] = {stem: Classification(tags=[]) for stem, _ in items}
@@ -164,6 +185,7 @@ def llm_classify_batch(
             stem = entry.get("id")
             if stem in results:
                 results[stem] = Classification(
-                    tags=entry.get("tags", []), proposed_tag=entry.get("proposed_tag")
+                    tags=_resolve(entry.get("tags", []), relations),
+                    proposed_tag=entry.get("proposed_tag"),
                 )
     return results

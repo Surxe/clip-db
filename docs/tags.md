@@ -59,6 +59,39 @@ memory from `tags.json`; it is never a hand-maintained artifact.
 
 `load_vocab` also still accepts the legacy `{"tags": [...]}` and bare-list shapes.
 
+## Tag relations (aliases + implications)
+
+On top of the flat vocabulary, two optional relation files add *dynamic tag
+context*. They are applied by `clip_core.relations.TagRelations` at **classify
+time only**, so they affect newly ingested clips and never rewrite existing ones.
+`resolve()` runs them in order — normalize aliases, then expand implications:
+
+### Aliases — [`tag_aliases.json`](../tag_aliases.json)
+Community nicknames that map to one canonical vocab tag. **This is the file to
+view/edit to see the current aliases.** An alias is never itself a tag (it's not
+in the enum); it only resolves *to* a canonical tag, and its nicknames are also
+shown to the classifier as prompt hints so it recognises them in a description.
+
+```json
+{ "games": { "War Robots Frontiers": {
+    "aliases": { "Snake Catcher": ["snaketrap", "cage", "trap"] } } } }
+```
+Keyed **canonical -> [nicknames]** (reads as "Snake Catcher's nicknames are …").
+
+### Implications — [`tag_implications.json`](../tag_implications.json)
+Each torso ability implies its module (one-directional, one-to-one): tag an
+ability and its module is added too — `snake catcher` -> also `garuda`. Tagging
+the module does **not** add the ability back.
+
+Unlike aliases, this file is **generated from game data, not hand-typed** — run
+[`scripts/extract_wrf_implications.py`](../scripts/extract_wrf_implications.py)
+(same source/conventions as the tag extractor; it asserts the mapping is strictly
+one-to-one and fails if a game update breaks that). Regenerate it on a game update
+alongside the tag refresh.
+
+Both files are wired through config (`CLIP_ALIASES_PATH`, `CLIP_IMPLICATIONS_PATH`)
+and consumed by `ingest.py`; a missing file simply disables that mechanism.
+
 ## Normalization / constraints
 
 - Tags are normalized to `strip().lower()` everywhere (vocab, index, query), so

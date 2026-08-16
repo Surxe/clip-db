@@ -1,0 +1,48 @@
+{
+  "games": {
+    "War Robots Frontiers": {
+      "ability_to_module": {
+        "Absorber Sphere": "Bulwark",
+        "Arpeggio": "Relic Bulgasari",
+        "Battle Order": "Lancelot",
+        "Blackout": "Typhon",
+        "Camouflage Web": "Anansi",
+        "Chain Overload": "Decker",
+        "Cold Snap": "Siren",
+        "Death Ray": "Cyclops",
+        "Ecdysis": "Heike",
+        "Echo Barrage": "Orochi",
+        "Energy Dome": "Varangian",
+        "Flaming Rider": "Helios",
+        "Galvanic Screen": "Volta",
+        "Grappling": "Crix",
+        "Guardian Matrix": "Ravana",
+        "Harmonizer": "Mesa",
+        "Holographic Decoy": "Loki",
+        "Homing Salvo": "Alpha",
+        "Hunter's Mark": "Artemis",
+        "Iron Rain": "Bulgasari",
+        "Kinetic Barrier": "Norna",
+        "Nanite Field": "Matriarch",
+        "Napalm Shell": "Harpy",
+        "Optical Camo": "Pursuer",
+        "Paladin's Ward": "Relic Lancelot",
+        "Ragnarok": "Fenrir",
+        "Reclaimer": "Wyrm",
+        "Rejuvenator": "Ceres",
+        "Repair Drone": "Tyr",
+        "Scrambler": "Griffin",
+        "Snake Catcher": "Garuda",
+        "Snare": "Grim",
+        "Steel Feathers": "Raven",
+        "Translocator": "Phantom",
+        "Warp Reload": "Fury",
+        "WarpArmor": "Kumo",
+        "Whiplash": "Scorpion",
+        "Winged Drone": "Hitcher",
+        "Wrath": "Ares",
+        "Zealot": "Purifier"
+      }
+    }
+  }
+}

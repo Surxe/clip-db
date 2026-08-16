@@ -51,6 +51,7 @@ def env(tmp_path, monkeypatch):
         implications_path=tmp_path / "tag_implications.json",
         descriptions_path=desc_path,
         model="claude-test",
+        auto_merge_max_seconds=120,
     )
     mod = _load_ingest()
     monkeypatch.setattr(mod, "load_config", lambda: cfg)

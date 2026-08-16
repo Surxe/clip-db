@@ -8,7 +8,13 @@
     "training",
     "full match",
     "1v1",
-    "movement tech"
+    "movement tech",
+    "double kill",
+    "duo",
+    "triple kill",
+    "trio",
+    "quad kill",
+    "penta kill"
   ],
   "games": {
     "War Robots Frontiers": {
@@ -281,10 +287,7 @@
           "Well-Timed"
         ],
         "concealment": [
-          "stealth",
-          "invis",
-          "cloak",
-          "camo"
+          "Invisible"
         ],
         "status effects": [
           "silence",

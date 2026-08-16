@@ -45,14 +45,10 @@
       },
       "ability_implies": {
         "Optical Camo": [
-          "stealth",
-          "invis",
-          "camo"
+          "invisible"
         ],
         "Camouflage Web": [
-          "cloak",
-          "stealth",
-          "invis"
+          "invisible"
         ],
         "Echo Barrage": [
           "reveal"

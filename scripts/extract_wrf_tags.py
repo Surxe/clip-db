@@ -4,11 +4,12 @@
 This encodes the WRF extraction logic documented in docs/tags.md so the game's tag
 lists can be regenerated when the game updates, rather than hand-maintained.
 
-  weapons:   Ready modules whose module_type_ref contains "Weapon"
-  modules:   Ready modules, everything else (chassis/torso/shoulder/ability/titan)
-  abilities: all abilities (no production_status filter)
-  excluded:  "Mk. I" / "Mk. II" variant names
-  names:     each entry's name.en; groups are distinct + sorted
+  weapons:       Ready modules whose module_type_ref contains "Weapon"
+  modules:       Ready modules, everything else (chassis/torso/shoulder/ability/titan)
+  abilities:     all abilities (no production_status filter) -- includes each torso's ability
+  pilot talents: all pilot talents (no production_status filter)
+  excluded:      "Mk. I" / "Mk. II" variant names
+  names:         each entry's name.en; groups are distinct + sorted
 
 Usage:
     python scripts/extract_wrf_tags.py [OBJECTS_DIR] [--merge tags.json]
@@ -48,6 +49,7 @@ def _distinct_sorted(names) -> list[str]:
 def extract(objects_dir: Path) -> dict:
     modules = json.loads((objects_dir / "Module.json").read_text())
     abilities = json.loads((objects_dir / "Ability.json").read_text())
+    talents = json.loads((objects_dir / "PilotTalent.json").read_text())
 
     weapons, other_modules = [], []
     for entry in modules.values():
@@ -60,11 +62,13 @@ def extract(objects_dir: Path) -> dict:
         bucket.append(name)
 
     ability_names = [_name_en(e) for e in abilities.values()]
+    talent_names = [_name_en(e) for e in talents.values()]
 
     groups = {
         "weapons": _distinct_sorted(weapons),
         "modules": _distinct_sorted(other_modules),
         "abilities": _distinct_sorted(ability_names),
+        "pilot talents": _distinct_sorted(talent_names),
     }
 
     # comma is the index tag delimiter — a tag must never contain one

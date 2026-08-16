@@ -138,9 +138,11 @@ The underlying extractor is [`scripts/extract_wrf_tags.py`](../scripts/extract_w
 
 - **Source:** `current/Objects/Module.json`, `Ability.json`, and `PilotTalent.json`.
 - **Name field:** each entry's `name.en`.
-- **Modules:** only `production_status == "Ready"`. Split by `module_type_ref`:
-  contains `"Weapon"` → **weapons** group; otherwise → **modules** group
-  (chassis / torso / shoulder / ability-slot / Titan body parts).
+- **Modules:** only `production_status == "Ready"`, split by `module_type_ref`:
+  contains `"Weapon"` → **weapons** group; contains `"Ability"` → **excluded** (an
+  ability-slot gadget's module name equals the ability it grants, already listed
+  under abilities — so it is not duplicated here); everything else → **modules**
+  group (robot chassis / torso / shoulder / Titan body parts).
 - **Abilities:** all entries, no status filter → **abilities** group. This already
   covers every torso's granted ability (e.g. the Garuda torso's ability is officially
   *Snake Catcher*, which lands here) — the community nicknames for those abilities

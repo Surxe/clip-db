@@ -93,7 +93,10 @@ def main() -> None:
     if args.merge:
         path = Path(args.merge)
         data = json.loads(path.read_text())
-        data.setdefault("games", {})[GAME_NAME] = block
+        # Refresh only the generated groups; preserve any hand-maintained groups
+        # (e.g. effect tags) added to the game block so they survive a re-extract.
+        game = data.setdefault("games", {}).setdefault(GAME_NAME, {})
+        game.setdefault("groups", {}).update(block["groups"])
         path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
         print(f"merged into {path}: {counts}")
     else:

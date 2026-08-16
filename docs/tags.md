@@ -79,15 +79,26 @@ shown to the classifier as prompt hints so it recognises them in a description.
 Keyed **canonical -> [nicknames]** (reads as "Snake Catcher's nicknames are …").
 
 ### Implications — [`tag_implications.json`](../tag_implications.json)
-Each torso ability implies its module (one-directional, one-to-one): tag an
-ability and its module is added too — `snake catcher` -> also `garuda`. Tagging
-the module does **not** add the ability back.
+A tag implies one or more others (one-directional — tagging the target never adds
+the source back). Two sub-maps in this file, both consumed together:
 
-Unlike aliases, this file is **generated from game data, not hand-typed** — run
-[`scripts/extract_wrf_implications.py`](../scripts/extract_wrf_implications.py)
-(same source/conventions as the tag extractor; it asserts the mapping is strictly
-one-to-one and fails if a game update breaks that). Regenerate it on a game update
-alongside the tag refresh.
+- **`ability_to_module`** — each torso ability adds its module (`snake catcher` ->
+  `garuda`). **Generated from game data, not hand-typed** — run
+  [`scripts/extract_wrf_implications.py`](../scripts/extract_wrf_implications.py)
+  (asserts strictly one-to-one; fails if a game update breaks that). Regenerate on
+  a game update alongside the tag refresh.
+- **`ability_implies`** — hand-maintained effect implications, one-to-many
+  (`optical camo` -> `stealth`, `invis`, `camo`). Edit this by hand.
+
+The extractor only rewrites `ability_to_module`, so `ability_implies` is
+**refresh-safe** (preserved across re-extraction).
+
+### Effect tags (hand-maintained groups)
+The implication targets above (`stealth`, `reveal`, `silence`, `bubble`, …) are
+themselves tags, grouped by hand under the WRF block (`concealment`,
+`status effects`, `support fields`). `extract_wrf_tags.py` refreshes only the four
+generated groups (weapons/modules/abilities/pilot talents), so these manual groups
+are **refresh-safe** too. Add new effect tags directly to `tags.json`.
 
 Both files are wired through config (`CLIP_ALIASES_PATH`, `CLIP_IMPLICATIONS_PATH`)
 and consumed by `ingest.py`; a missing file simply disables that mechanism.

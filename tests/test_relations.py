@@ -19,7 +19,20 @@ def test_load_flattens_aliases_and_implications(tmp_path):
     rel = TagRelations.load(aliases, impl)
     assert rel.aliases["snaketrap"] == "snake catcher"  # normalized
     assert rel.aliases["cage"] == "snake catcher"
-    assert rel.implications["snake catcher"] == "garuda"
+    assert rel.implications["snake catcher"] == ["garuda"]
+
+
+def test_load_merges_module_and_effect_implications(tmp_path):
+    impl = _write(tmp_path, "impl.json", {
+        "games": {"WRF": {
+            "ability_to_module": {"Optical Camo": "Pursuer"},
+            "ability_implies": {"Optical Camo": ["stealth", "invis", "camo"]},
+        }}
+    })
+    rel = TagRelations.load(None, impl)
+    assert rel.implications["optical camo"] == ["pursuer", "stealth", "invis", "camo"]
+    # ability expands to module + every effect, order-preserving, de-duped
+    assert rel.resolve(["Optical Camo"]) == ["optical camo", "pursuer", "stealth", "invis", "camo"]
 
 
 def test_missing_files_are_optional():

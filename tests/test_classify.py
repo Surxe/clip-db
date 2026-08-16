@@ -4,7 +4,7 @@ from clip_core.tags import TagVocab
 
 _REL = TagRelations(
     aliases={"snaketrap": "snake catcher", "cage": "snake catcher", "trap": "snake catcher"},
-    implications={"snake catcher": "garuda"},
+    implications={"snake catcher": ["garuda"]},
     alias_groups={"snake catcher": ["snaketrap", "cage", "trap"]},
 )
 

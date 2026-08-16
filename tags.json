@@ -276,6 +276,21 @@
           "Trigger-Happy",
           "Vanguard",
           "Well-Timed"
+        ],
+        "concealment": [
+          "stealth",
+          "invis",
+          "cloak",
+          "camo"
+        ],
+        "status effects": [
+          "silence",
+          "reveal",
+          "flame dot"
+        ],
+        "support fields": [
+          "bubble",
+          "nanite"
         ]
       }
     }

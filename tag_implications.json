@@ -42,6 +42,39 @@
         "Winged Drone": "Hitcher",
         "Wrath": "Ares",
         "Zealot": "Purifier"
+      },
+      "ability_implies": {
+        "Optical Camo": [
+          "stealth",
+          "invis",
+          "camo"
+        ],
+        "Camouflage Web": [
+          "cloak",
+          "stealth",
+          "invis"
+        ],
+        "Echo Barrage": [
+          "reveal"
+        ],
+        "Magnetic Sensor": [
+          "reveal"
+        ],
+        "Recon Mode": [
+          "reveal"
+        ],
+        "Ion Disruptor": [
+          "silence"
+        ],
+        "Napalm Shell": [
+          "flame dot"
+        ],
+        "Energy Dome": [
+          "bubble"
+        ],
+        "Nanite Field": [
+          "nanite"
+        ]
       }
     }
   }

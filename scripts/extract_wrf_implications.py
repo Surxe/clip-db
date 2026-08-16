@@ -127,7 +127,10 @@ def main() -> None:
     if args.merge:
         path = Path(args.merge)
         data = json.loads(path.read_text()) if path.exists() else {}
-        data.setdefault("games", {})[GAME_NAME] = block
+        # Refresh only the generated ability_to_module map; preserve sibling keys
+        # (e.g. the hand-maintained ability_implies effect map) in the game block.
+        game = data.setdefault("games", {}).setdefault(GAME_NAME, {})
+        game["ability_to_module"] = block["ability_to_module"]
         path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
         print(f"merged into {path}: {count} ability->module pairs")
     else:

@@ -66,6 +66,14 @@ def upsert_clip(conn: sqlite3.Connection, clip: Clip) -> None:
     conn.commit()
 
 
+def set_merged_path(conn: sqlite3.Connection, stem: str, merged_path: str | None) -> bool:
+    """Attach (or clear) a merged rendition on an existing asset row without touching
+    its tags/description. Returns False if no such stem is indexed (master not ingested)."""
+    cur = conn.execute("UPDATE clips SET merged_path=? WHERE stem=?", (merged_path, stem))
+    conn.commit()
+    return cur.rowcount > 0
+
+
 def get_clip(conn: sqlite3.Connection, stem: str) -> Clip | None:
     row = conn.execute("SELECT * FROM clips WHERE stem=?", (stem,)).fetchone()
     return _row_to_clip(row) if row else None

@@ -34,6 +34,7 @@ def _clip_dict(c: index.Clip) -> dict:
         "game": c.game,
         "date": c.date,
         "duration": c.duration,
+        "description": c.description,
         "tags": c.tags,
     }
 

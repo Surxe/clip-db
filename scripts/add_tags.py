@@ -8,32 +8,19 @@
   python scripts/add_tags.py --game "War Robots Frontiers" --group weapons Apollo Zeus
 
 Prints what was added vs. skipped (already present). Preserves display casing.
+
+Thin CLI over clip_core.vocab_edit -- the same insertion logic the interactive review
+step uses, so there is one source of truth.
 """
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from pathlib import Path
 
-TAGS_JSON = Path(__file__).resolve().parent.parent / "tags.json"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # repo root on sys.path
 
-
-def _add(existing: list[str], new: list[str], *, sort: bool) -> tuple[list[str], list[str], list[str]]:
-    have = {t.lower() for t in existing}
-    added, skipped = [], []
-    for t in new:
-        t = t.strip()
-        if not t:
-            continue
-        if "," in t:
-            sys.exit(f"error: tag {t!r} contains a comma (illegal — comma is the index delimiter)")
-        (skipped if t.lower() in have else added).append(t)
-        have.add(t.lower())
-    result = existing + added
-    if sort:
-        result = sorted(dict.fromkeys(result), key=str.lower)
-    return result, added, skipped
+from clip_core import vocab_edit
 
 
 def main() -> None:
@@ -44,25 +31,24 @@ def main() -> None:
     ap.add_argument("tags", nargs="*", metavar="TAG", help="Item tags for --game/--group.")
     args = ap.parse_args()
 
-    data = json.loads(TAGS_JSON.read_text())
-    data.setdefault("generic", [])
-    data.setdefault("games", {})
-
-    if args.generic:
-        data["generic"], added, skipped = _add(data["generic"], args.generic, sort=False)
-        print(f"generic: +{len(added)} {added}  (skipped {len(skipped)})")
-
-    if args.game or args.group or args.tags:
-        if not (args.game and args.group and args.tags):
-            ap.error("game tags need --game NAME --group LABEL TAG [TAG ...]")
-        groups = data["games"].setdefault(args.game, {}).setdefault("groups", {})
-        groups[args.group], added, skipped = _add(groups.get(args.group, []), args.tags, sort=True)
-        print(f'{args.game} / {args.group}: +{len(added)} {added}  (skipped {len(skipped)})')
-
     if not (args.generic or args.game):
         ap.error("nothing to add: pass --generic or --game/--group")
 
-    TAGS_JSON.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
+    data = vocab_edit.load_tags()
+    try:
+        if args.generic:
+            added, skipped = vocab_edit.add_generic(data, args.generic)
+            print(f"generic: +{len(added)} {added}  (skipped {len(skipped)})")
+
+        if args.game or args.group or args.tags:
+            if not (args.game and args.group and args.tags):
+                ap.error("game tags need --game NAME --group LABEL TAG [TAG ...]")
+            added, skipped = vocab_edit.add_game_group(data, args.game, args.group, args.tags)
+            print(f"{args.game} / {args.group}: +{len(added)} {added}  (skipped {len(skipped)})")
+    except ValueError as e:
+        sys.exit(f"error: {e}")
+
+    vocab_edit.save_tags(data)
 
 
 if __name__ == "__main__":

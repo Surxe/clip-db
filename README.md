@@ -56,8 +56,19 @@ accepts any id/alias `claude --model` takes.
 
 ## Usage
 
+Tagging is three decoupled steps: **describe** (write a sentence per clip), **ingest**
+(batch-classify + move + index), **review** (fix tags / grow the vocab). Describing is
+separate from tagging so the whole batch is classified in one call (the vocabulary is sent
+once, not per clip).
+
 ```bash
-.venv/bin/python clip-tagger/ingest.py --dry-run          # preview intake
-.venv/bin/python clip-tagger/ingest.py --description "1v4 retake for the round"
+.venv/bin/python clip-tagger/describe.py                  # sentence per staged master -> descriptions.json
+.venv/bin/python clip-tagger/ingest.py --dry-run          # preview: one batched classify, no moves
+.venv/bin/python clip-tagger/ingest.py                    # classify all, move into library, index
+.venv/bin/python clip-tagger/review.py                    # confirm/fix tags; add proposed tags to the vocab
 .venv/bin/python clip-viewer-mcp/server.py                # run the MCP over stdio
 ```
+
+The per-clip descriptions live in a manifest (`descriptions.json` in the intake dir by
+default; `CLIP_DESCRIPTIONS_PATH` to relocate) mapping asset stem -> sentence — hand-write it
+for a backlog, or use `describe.py` interactively.

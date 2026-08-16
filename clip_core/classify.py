@@ -32,20 +32,45 @@ class Classification:
     proposed_tag: str | None = None
 
 
+def _classification_props(vocab: TagVocab) -> dict:
+    """The shared `tags`/`proposed_tag` schema fields (single and batch reuse these)."""
+    return {
+        "tags": {
+            "type": "array",
+            "items": {"type": "string", "enum": vocab.as_list()},
+        },
+        "proposed_tag": {
+            "type": ["string", "null"],
+            "description": "A single new tag, only if nothing in the vocabulary fits; else null.",
+        },
+    }
+
+
 def build_schema(vocab: TagVocab) -> dict:
     return {
         "type": "object",
-        "properties": {
-            "tags": {
-                "type": "array",
-                "items": {"type": "string", "enum": vocab.as_list()},
-            },
-            "proposed_tag": {
-                "type": ["string", "null"],
-                "description": "A single new tag, only if nothing in the vocabulary fits; else null.",
-            },
-        },
+        "properties": _classification_props(vocab),
         "required": ["tags", "proposed_tag"],
+        "additionalProperties": False,
+    }
+
+
+def build_batch_schema(vocab: TagVocab) -> dict:
+    """Schema for classifying many clips at once: a `results` array, one entry per id."""
+    return {
+        "type": "object",
+        "properties": {
+            "results": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {"id": {"type": "string"}, **_classification_props(vocab)},
+                    "required": ["id", "tags", "proposed_tag"],
+                    "additionalProperties": False,
+                },
+            }
+        },
+        "required": ["results"],
         "additionalProperties": False,
     }
 
@@ -99,3 +124,46 @@ def llm_classify(
         model=model,
     )
     return Classification(tags=data.get("tags", []), proposed_tag=data.get("proposed_tag"))
+
+
+BATCH_SYSTEM = (
+    "\n\nYou will receive several clips at once, each on its own line as `[id] description`. "
+    "Classify every clip independently and return one result object per clip under `results`, "
+    "echoing back each clip's exact `id`. Apply the same rules to each."
+)
+
+
+def _chunked(seq: list, size: int):
+    for i in range(0, len(seq), size):
+        yield seq[i : i + size]
+
+
+def llm_classify_batch(
+    items: list[tuple[str, str]],
+    vocab: TagVocab,
+    *,
+    runner=None,
+    model: str = "claude-sonnet-4-5",
+    chunk_size: int = 25,
+) -> dict[str, Classification]:
+    """Classify many `(id, description)` pairs, sending the vocabulary once per chunk.
+
+    Returns a dict keyed by id. Ids the model omits map to an empty Classification, so the
+    caller always gets an entry for every input id. Pass `runner` to inject a stub (tests).
+    """
+    if runner is None:
+        runner = _claude_cli_runner
+    system = f"{SYSTEM}{BATCH_SYSTEM}\n\n# Vocabulary\n{vocab.to_markdown()}"
+    schema = build_batch_schema(vocab)
+
+    results: dict[str, Classification] = {stem: Classification(tags=[]) for stem, _ in items}
+    for chunk in _chunked(items, chunk_size):
+        prompt = "\n".join(f"[{stem}] {desc}" for stem, desc in chunk)
+        data = runner(prompt=prompt, system=system, schema=schema, model=model)
+        for entry in data.get("results", []):
+            stem = entry.get("id")
+            if stem in results:
+                results[stem] = Classification(
+                    tags=entry.get("tags", []), proposed_tag=entry.get("proposed_tag")
+                )
+    return results

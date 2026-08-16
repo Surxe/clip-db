@@ -92,11 +92,16 @@ diff and commit.
 The underlying extractor is [`scripts/extract_wrf_tags.py`](../scripts/extract_wrf_tags.py)
 (usable standalone; prints the block to stdout without `--merge`). The extraction logic:
 
-- **Source:** `current/Objects/Module.json` and `current/Objects/Ability.json`.
+- **Source:** `current/Objects/Module.json`, `Ability.json`, and `PilotTalent.json`.
 - **Name field:** each entry's `name.en`.
 - **Modules:** only `production_status == "Ready"`. Split by `module_type_ref`:
   contains `"Weapon"` → **weapons** group; otherwise → **modules** group
   (chassis / torso / shoulder / ability-slot / Titan body parts).
-- **Abilities:** all entries, no status filter → **abilities** group.
+- **Abilities:** all entries, no status filter → **abilities** group. This already
+  covers every torso's granted ability (e.g. the Garuda torso's ability is officially
+  *Snake Catcher*, which lands here) — the community nicknames for those abilities
+  (snaketrap / cage / trap …) are not in the game data and are handled separately as
+  tag aliasing, not extraction.
+- **Pilot talents:** all `PilotTalent.json` entries, no status filter → **pilot talents** group.
 - **Excluded:** `Mk. I` / `Mk. II` variant names (relic/titan tier duplicates).
 - Each group is distinct + sorted.

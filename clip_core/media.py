@@ -76,14 +76,24 @@ def regenerate_merged(master_path, out_path=None) -> Path:
     out = Path(out_path) if out_path else master.with_name(merged_name_for(master))
     n = _count_audio_streams(master)
     if n <= 1:
-        cmd = ["ffmpeg", "-y", "-i", str(master), "-c", "copy", str(out)]
+        # Nothing to mix -- straight remux. `+faststart` still relocates the moov
+        # atom to the front so the merged file streams in a web player like the master.
+        cmd = ["ffmpeg", "-y", "-i", str(master), "-c", "copy",
+               "-movflags", "+faststart", str(out)]
     else:
         inputs = "".join(f"[0:a:{i}]" for i in range(n))
+        # normalize=0: amix otherwise scales each input by 1/n, so the mix comes out
+        # quieter than any single track (game audio ~inaudible). Sum at full level and
+        # brick-wall with alimiter so summed peaks can't clip. +faststart puts the moov
+        # atom up front -- without it ffmpeg writes moov at the end and streaming players
+        # render the merged clip wrong (blank / unseekable) even though the master is fine.
         cmd = [
             "ffmpeg", "-y", "-i", str(master),
-            "-filter_complex", f"{inputs}amix=inputs={n}:duration=longest[aout]",
+            "-filter_complex",
+            f"{inputs}amix=inputs={n}:duration=longest:normalize=0,alimiter=limit=0.95[aout]",
             "-map", "0:v", "-map", "[aout]",
-            "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", str(out),
+            "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+            "-movflags", "+faststart", str(out),
         ]
     subprocess.run(cmd, check=True)
     return out

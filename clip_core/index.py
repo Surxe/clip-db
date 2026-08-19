@@ -74,6 +74,17 @@ def set_merged_path(conn: sqlite3.Connection, stem: str, merged_path: str | None
     return cur.rowcount > 0
 
 
+def delete_clip(conn: sqlite3.Connection, stem: str) -> Clip | None:
+    """Remove an asset's index row. Returns the deleted Clip (so callers can clean up its
+    files) or None if no such stem was indexed."""
+    clip = get_clip(conn, stem)
+    if clip is None:
+        return None
+    conn.execute("DELETE FROM clips WHERE stem=?", (stem,))
+    conn.commit()
+    return clip
+
+
 def get_clip(conn: sqlite3.Connection, stem: str) -> Clip | None:
     row = conn.execute("SELECT * FROM clips WHERE stem=?", (stem,)).fetchone()
     return _row_to_clip(row) if row else None

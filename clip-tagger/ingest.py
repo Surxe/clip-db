@@ -6,6 +6,11 @@ one-line description from the descriptions manifest (written by describe.py), cl
 them all in one batched call, moves each master (and its _merged.mp4, if present) into the
 library, and writes an index row. Only masters are ingested (`*.mp4` excluding `*_merged.mp4`).
 
+After a master lands in the library, its mixed-audio `_merged.mp4` is generated there and
+attached to the index row -- so ingesting a clip also produces its merged rendition, gated
+by CLIP_AUTO_MERGE_MAX_SECONDS (same threshold as `merge.py --auto`). A master that already
+brought a `_merged.mp4` from staging is left as-is; pass --no-merge to skip merging entirely.
+
 Masters with no manifest entry are skipped (run describe.py first), unless --allow-untagged.
 Any classifier-proposed new tags are written to proposals.json next to the index for the
 review step to resolve.
@@ -21,7 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # repo root on 
 
 import argparse
 
-from clip_core import descriptions, index, media
+from clip_core import descriptions, index, media, merge
 from clip_core import tags as tagmod
 from clip_core.classify import llm_classify_batch
 from clip_core.config import load_config
@@ -42,6 +47,7 @@ def main() -> None:
     ap.add_argument("--dry-run", action="store_true", help="preview without moving or writing")
     ap.add_argument("--embed", action="store_true", help="also embed tags in the master via exiftool")
     ap.add_argument("--allow-untagged", action="store_true", help="ingest masters that have no description (no tags)")
+    ap.add_argument("--no-merge", action="store_true", help="skip generating a _merged.mp4 for each ingested master")
     args = ap.parse_args()
 
     cfg = load_config()
@@ -83,10 +89,17 @@ def main() -> None:
 
         merged_src = m.with_name(media.merged_name_for(m))
         has_merged = merged_src.exists()
+        # Generate a _merged.mp4 for short masters that didn't bring one from staging.
+        will_merge = (
+            not args.no_merge
+            and not has_merged
+            and duration is not None
+            and duration <= cfg.auto_merge_max_seconds
+        )
 
         if args.dry_run:
             extra = f" (+proposed: {proposed})" if proposed else ""
-            merged_note = " +merged" if has_merged else ""
+            merged_note = " +merged" if has_merged else (" +will-merge" if will_merge else "")
             print(f"[dry-run] {stem}: dur={duration}{merged_note} tags={tags}{extra}")
             continue
 
@@ -108,6 +121,9 @@ def main() -> None:
             media.embed_tags(master_dst, tags)
         note = f" (proposed new tag: {proposed})" if proposed else ""
         print(f"ingested {stem} -> {master_dst} tags={tags}{note}")
+        if will_merge:
+            result = merge.merge_master(conn, master_dst)
+            print(f"  merged {stem} -> {result.merged_path}")
 
     if not args.dry_run and proposals:
         proposals_path = Path(cfg.index_path).parent / "proposals.json"

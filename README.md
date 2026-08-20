@@ -17,8 +17,10 @@ clip-viewer-mcp/      # server.py — stdio MCP: query + retrieval
 1. Record on Windows or Linux. A separate (user-owned) step drops clips into the
    shared staging dir `os-shared/transfer/clips/` (`/mnt/os-shared/transfer/clips` on Linux).
 2. `clip-tagger/ingest.py` moves each **master** out of staging into the ext4 library,
-   probes metadata, classifies the description against the vocab, and writes an index row.
-   Masters are `*.mp4` excluding `*_merged.mp4`; merged files are regenerable build output.
+   probes metadata, classifies the description against the vocab, writes an index row, and
+   generates its mixed-audio `*_merged.mp4` in the library (short masters only, gated by
+   `CLIP_AUTO_MERGE_MAX_SECONDS`; `--no-merge` opts out). Masters are `*.mp4` excluding
+   `*_merged.mp4`; merged files are regenerable build output (`merge.py` rebuilds them).
 3. `clip-viewer-mcp/server.py` exposes query + retrieval tools to an MCP client (Claude Code).
 
 ## Tags

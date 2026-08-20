@@ -56,6 +56,13 @@ def env(tmp_path, monkeypatch):
     mod = _load_ingest()
     monkeypatch.setattr(mod, "load_config", lambda: cfg)
     monkeypatch.setattr(media, "probe_duration", lambda p: 12.0)
+
+    def _fake_regen(master_path, out_path=None):  # stand in for ffmpeg
+        out = Path(out_path) if out_path else Path(master_path).with_name(media.merged_name_for(master_path))
+        out.write_bytes(b"\x00")
+        return out
+
+    monkeypatch.setattr(media, "regenerate_merged", _fake_regen)
     monkeypatch.setattr(
         mod,
         "llm_classify_batch",
@@ -80,8 +87,16 @@ def test_ingest_moves_pairs_and_indexes(env):
     assert a.merged_path == str(library / "a_merged.mp4")  # merged paired + moved
     assert not (intake / "a.mp4").exists()                 # master left staging
 
+    # a already brought its own _merged.mp4 -> not regenerated (no stray extra file)
+    assert media.regenerate_merged  # sanity: stub is installed
+
+    # b had no merged and is short -> ingest generated + attached one in the library
+    b = index.get_clip(conn, "b")
+    assert b.tags == []
+    assert b.merged_path == str(library / "b_merged.mp4")
+    assert (library / "b_merged.mp4").exists()
+
     # b had a proposed tag -> written to proposals.json, no tags yet
-    assert index.get_clip(conn, "b").tags == []
     proposals = json.loads((cfg.index_path.parent / "proposals.json").read_text())
     assert proposals == {"b": "meltdown"}
 
@@ -92,6 +107,24 @@ def test_ingest_skips_undescribed(env):
     conn = connect(cfg.index_path)
     assert index.get_clip(conn, "c") is None        # not ingested
     assert (intake / "c.mp4").exists()              # left in staging
+
+
+def test_no_merge_skips_generation(env, monkeypatch):
+    mod, cfg, intake, library = env
+    monkeypatch.setattr(sys, "argv", ["ingest.py", "--no-merge"])
+    mod.main()
+    conn = connect(cfg.index_path)
+    assert index.get_clip(conn, "b").merged_path is None   # not generated
+    assert not (library / "b_merged.mp4").exists()
+
+
+def test_long_master_not_auto_merged(env, monkeypatch):
+    mod, cfg, intake, library = env
+    monkeypatch.setattr(media, "probe_duration", lambda p: 999.0)  # over threshold
+    mod.main()
+    conn = connect(cfg.index_path)
+    assert index.get_clip(conn, "b").merged_path is None   # too long -> skipped
+    assert not (library / "b_merged.mp4").exists()
 
 
 def test_dry_run_moves_nothing(env, monkeypatch):

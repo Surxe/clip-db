@@ -27,8 +27,10 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import subprocess
 import sys
+import tempfile
 from datetime import datetime
 from pathlib import Path
 from shutil import which
@@ -49,13 +51,28 @@ from compress import (  # noqa: E402  (sibling module)
 _HEADROOM, _AUDIO_KBPS, _MIN_VIDEO_KBPS = 0.90, 96, 350
 
 
-def _default_share_dir() -> Path:
-    return Path(os.environ.get("CLIP_SHARE_DIR", str(Path.home() / "clip-share")))
+# Our compressed share renditions look like <stem>_merged_10mb.mp4. That name does NOT
+# end in "_merged", so clip_core.media.is_master() treats it as a master -- exclude it
+# explicitly so our own outputs don't masquerade as source clips in the picker.
+_SHARE_RE = re.compile(r"_merged_\d+mb$", re.IGNORECASE)
+
+
+def is_share_rendition(path) -> bool:
+    return bool(_SHARE_RE.search(Path(path).stem))
+
+
+def _share_name(stem: str, cap_bytes: int) -> str:
+    """<stem>_merged_<cap>mb.mp4 -- the compressed rendition, tagged with its cap."""
+    return f"{stem}_merged_{cap_bytes // (1024 * 1024)}mb.mp4"
+
+
+def _default_out_dir(cfg_library: Path) -> Path:
+    return Path(os.environ["CLIP_SHARE_DIR"]) if os.environ.get("CLIP_SHARE_DIR") else cfg_library
 
 
 def _masters_newest_first(library: Path) -> list[Path]:
     return sorted(
-        (f for f in library.glob("*.mp4") if media.is_master(f)),
+        (f for f in library.glob("*.mp4") if media.is_master(f) and not is_share_rendition(f)),
         key=lambda f: f.stat().st_mtime,
         reverse=True,
     )
@@ -193,7 +210,8 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("clip", nargs="?", help='a path, a stem/substring, or "latest"; omit to pick interactively')
     ap.add_argument("--pick", action="store_true", help="force the interactive picker even if a clip is given")
-    ap.add_argument("--out-dir", type=Path, default=_default_share_dir(), help="where to write the compressed file")
+    ap.add_argument("--out-dir", type=Path, default=_default_out_dir(cfg.library_dir),
+                    help="where to write the compressed file (default: the library, or CLIP_SHARE_DIR)")
     ap.add_argument("--library", type=Path, default=cfg.library_dir)
     ap.add_argument("--cap-bytes", type=int, default=DISCORD_UNBOOSTED_CAP)
     ap.add_argument("--no-clipboard", action="store_true", help="compress only, don't touch the clipboard")
@@ -220,16 +238,14 @@ def main() -> None:
         )
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
-    merged, is_temp = ensure_merged(src, args.library, args.out_dir)
-    # Name the share copy off the logical stem, not the _merged transport suffix.
-    dst = args.out_dir / f"{media.stem_of(src)}_share.mp4"
+    # <stem>_merged_<cap>mb.mp4; overwrites a prior rendition of the same clip + cap.
+    dst = args.out_dir / _share_name(media.stem_of(src), args.cap_bytes)
 
-    print(f"compressing {merged.name} -> {dst}")
-    try:
+    # Any on-demand merge goes to a system tempdir (auto-cleaned), never the library.
+    with tempfile.TemporaryDirectory(prefix="clip-merge_") as td:
+        merged, _is_temp = ensure_merged(src, args.library, Path(td))
+        print(f"compressing {merged.name} -> {dst}")
         result = compress_for_share(merged, dst, cap_bytes=args.cap_bytes)
-    finally:
-        if is_temp:
-            merged.unlink(missing_ok=True)  # drop the on-demand merge intermediate
     print(
         f"  {_fmt_mib(result.src_size)} -> {_fmt_mib(result.out_size)} "
         f"({result.out_height}p{result.out_fps:g}, {result.video_kbps}kbps video) "

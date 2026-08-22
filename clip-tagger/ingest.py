@@ -18,7 +18,6 @@ review step to resolve.
 from __future__ import annotations
 
 import json
-import re
 import sys
 from pathlib import Path
 
@@ -32,15 +31,6 @@ from clip_core.classify import llm_classify_batch
 from clip_core.config import load_config
 from clip_core.relations import TagRelations
 from clip_core.schema import connect
-
-_DATE_RE = re.compile(r"(\d{4}-\d{2}-\d{2})")
-
-
-def _date_from_stem(stem: str) -> str | None:
-    """Clips are named like 2026-07-30_22-03-03 -> pull the date out when present."""
-    m = _DATE_RE.match(stem)
-    return m.group(1) if m else None
-
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -111,7 +101,7 @@ def main() -> None:
                 stem=stem,
                 master_path=str(master_dst),
                 merged_path=str(merged_dst) if merged_dst else None,
-                date=_date_from_stem(stem),
+                date=media.resolve_date(master_dst, stem),
                 duration=duration,
                 description=description,
                 tags=tags,

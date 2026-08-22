@@ -36,3 +36,33 @@ def test_move_into_library_copies_then_removes(tmp_path):
     assert dst == lib / "clip9.mp4"
     assert dst.read_bytes() == b"data"
     assert not src.exists()  # staging is cleared
+
+
+def test_date_from_stem():
+    assert media.date_from_stem("2026-07-30_22-03-03") == "2026-07-30"
+    assert media.date_from_stem("2026-07-30 goblin combo") == "2026-07-30"
+    assert media.date_from_stem("the goblin combo") is None
+
+
+def test_file_mtime_date(tmp_path):
+    import os
+    from datetime import datetime
+    f = tmp_path / "clip.mp4"
+    f.write_bytes(b"")
+    ts = datetime(2026, 3, 14, 9, 0, 0).timestamp()
+    os.utime(f, (ts, ts))
+    assert media.file_mtime_date(f) == "2026-03-14"
+    assert media.file_mtime_date(tmp_path / "nope.mp4") is None
+
+
+def test_resolve_date_ladder(tmp_path):
+    import os
+    from datetime import datetime
+    # no creation_time tag on an empty file -> mtime is the source
+    f = tmp_path / "the goblin combo.mp4"
+    f.write_bytes(b"")
+    ts = datetime(2026, 5, 1, 12, 0, 0).timestamp()
+    os.utime(f, (ts, ts))
+    assert media.resolve_date(f, "the goblin combo") == "2026-05-01"
+    # an explicit stem timestamp wins over mtime
+    assert media.resolve_date(f, "2026-01-02_10-00-00 clip") == "2026-01-02"

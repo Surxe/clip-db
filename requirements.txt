@@ -1,2 +1,3 @@
 mcp[cli]>=2,<3
 python-dotenv
+httpx  # clip-distributor/post.py: multipart upload to a Discord webhook

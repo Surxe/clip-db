@@ -90,17 +90,25 @@ def pick_master(library: Path) -> Path:
 
 
 def _pick_kdialog(library: Path) -> Path:
-    """KDE file dialog rooted at the library. No forced sort -- the dialog's own
-    sorting applies. Returns the chosen file; exits if cancelled."""
-    r = subprocess.run(
-        ["kdialog", "--title", "Share clip: pick a master",
-         "--getopenfilename", str(library), "*.mp4 *.MP4|Clips (*.mp4)"],
-        capture_output=True, text=True,
-    )
-    path = r.stdout.strip()
-    if r.returncode != 0 or not path:
-        sys.exit("no clip selected")
-    return Path(path)
+    """KDE file dialog showing masters only. kdialog's filter is include-only and can't
+    exclude our _merged / _merged_<N>mb renditions, so the dialog is rooted at a temp
+    dir of symlinks to just the masters; the pick is resolved back to the real file."""
+    masters = _masters_newest_first(library)  # excludes _merged and _merged_<N>mb
+    if not masters:
+        sys.exit(f"no master clips in {library}")
+    with tempfile.TemporaryDirectory(prefix="clip-pick_") as td:
+        tdp = Path(td)
+        for f in masters:
+            (tdp / f.name).symlink_to(f)
+        r = subprocess.run(
+            ["kdialog", "--title", "Share clip: pick a master",
+             "--getopenfilename", str(tdp), "*.mp4|Clips (*.mp4)"],
+            capture_output=True, text=True,
+        )
+        path = r.stdout.strip()
+        if r.returncode != 0 or not path:
+            sys.exit("no clip selected")
+        return Path(path).resolve()  # symlink -> real library file (before tempdir cleanup)
 
 
 def _pick_terminal(library: Path) -> Path:

@@ -10,6 +10,7 @@ Two projects over one shared core:
 clip_core/            # shared: config, tags vocab, sqlite index, media I/O, llm_classify, query
 clip-tagger/          # ingest.py — batch: intake move + tag/categorize
 clip-viewer-mcp/      # server.py — stdio MCP: query + retrieval
+clip-distributor/     # compress.py + share.py — size-fit a clip under the Discord cap, to clipboard
 ```
 
 ## Clip flow

@@ -2,7 +2,7 @@
 """Share a clip to Discord: pick a library master, merge its audio if needed, compress
 it under the upload cap, and put the result on the clipboard as a *file* to paste in.
 
-    share.py                              # pick from the library (newest first)
+    share.py                              # pick from the library (kdialog dialog)
     share.py latest                       # newest merged master, no prompt
     share.py "the goblin combo"           # by stem/substring
     share.py /path/to/anything.mp4        # explicit path (master or merged)
@@ -62,9 +62,32 @@ def _masters_newest_first(library: Path) -> list[Path]:
 
 
 def pick_master(library: Path) -> Path:
-    """Interactive picker: library masters, most recent at the top. Enter selects #1."""
+    """Pick a clip from the library: a graphical kdialog dialog when a desktop session
+    is present, otherwise a terminal list (newest first)."""
     if not library.is_dir():
         sys.exit(f"library not found: {library} (set CLIP_LIBRARY_DIR)")
+    have_display = bool(os.environ.get("WAYLAND_DISPLAY") or os.environ.get("DISPLAY"))
+    if have_display and which("kdialog"):
+        return _pick_kdialog(library)
+    return _pick_terminal(library)
+
+
+def _pick_kdialog(library: Path) -> Path:
+    """KDE file dialog rooted at the library. No forced sort -- the dialog's own
+    sorting applies. Returns the chosen file; exits if cancelled."""
+    r = subprocess.run(
+        ["kdialog", "--title", "Share clip: pick a master",
+         "--getopenfilename", str(library), "*.mp4 *.MP4|Clips (*.mp4)"],
+        capture_output=True, text=True,
+    )
+    path = r.stdout.strip()
+    if r.returncode != 0 or not path:
+        sys.exit("no clip selected")
+    return Path(path)
+
+
+def _pick_terminal(library: Path) -> Path:
+    """Fallback picker for headless shells: library masters, newest first, Enter = #1."""
     masters = _masters_newest_first(library)
     if not masters:
         sys.exit(f"no master clips in {library}")

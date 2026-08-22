@@ -49,7 +49,12 @@ def list_clips(untagged: bool = False) -> list[dict]:
 
 @mcp.tool()
 def query(expr: str) -> list[dict]:
-    """Query clips by expression, e.g. 'clutch AND valorant', 'game:apex', 'tag:funny'."""
+    """Query clips by expression, e.g. 'clutch AND valorant', 'game:apex', 'tag:funny'.
+
+    A bare term matches a tag or the game; prefixes narrow it (tag:, game:, date:).
+    Tags may contain spaces — write them bare ('movement tech') or quoted
+    ('tag:"fuel thief"'); both work. AND/OR combine terms left-to-right.
+    """
     conn = _conn()
     return [_clip_dict(c) for c in querymod.query(conn, expr)]
 

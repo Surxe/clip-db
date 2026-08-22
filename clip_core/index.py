@@ -74,6 +74,14 @@ def set_merged_path(conn: sqlite3.Connection, stem: str, merged_path: str | None
     return cur.rowcount > 0
 
 
+def set_date(conn: sqlite3.Connection, stem: str, date: str | None) -> bool:
+    """Set (or clear) a clip's date without touching its other fields. Returns False
+    if no such stem is indexed."""
+    cur = conn.execute("UPDATE clips SET date=? WHERE stem=?", (date, stem))
+    conn.commit()
+    return cur.rowcount > 0
+
+
 def delete_clip(conn: sqlite3.Connection, stem: str) -> Clip | None:
     """Remove an asset's index row. Returns the deleted Clip (so callers can clean up its
     files) or None if no such stem was indexed."""

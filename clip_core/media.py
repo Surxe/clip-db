@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
+from datetime import datetime
 from pathlib import Path
 
 MERGED_SUFFIX = "_merged"
@@ -46,6 +48,52 @@ def probe_duration(path) -> float | None:
         return float(json.loads(out)["format"]["duration"])
     except Exception:
         return None
+
+
+_DATE_RE = re.compile(r"(\d{4}-\d{2}-\d{2})")
+
+
+def date_from_stem(stem: str) -> str | None:
+    """Pull a YYYY-MM-DD out of a timestamped stem (e.g. 2026-07-30_22-03-03)."""
+    m = _DATE_RE.match(stem)
+    return m.group(1) if m else None
+
+
+def probe_creation_date(path) -> str | None:
+    """The container's creation_time tag as YYYY-MM-DD, if the recorder embedded one.
+
+    Probe the master (a merged/edited re-encode usually strips this tag).
+    """
+    try:
+        out = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format_tags=creation_time",
+             "-of", "default=nw=1:nk=1", str(path)],
+            capture_output=True, text=True, check=True,
+        ).stdout.strip()
+    except Exception:
+        return None
+    m = _DATE_RE.match(out)
+    return m.group(1) if m else None
+
+
+def file_mtime_date(path) -> str | None:
+    """The file's modification time as YYYY-MM-DD (local time)."""
+    try:
+        ts = Path(path).stat().st_mtime
+    except OSError:
+        return None
+    return datetime.fromtimestamp(ts).strftime("%Y-%m-%d")
+
+
+def resolve_date(master_path, stem: str) -> str | None:
+    """Best-effort clip date, most-trustworthy source first: an explicit timestamp
+    in the stem, then the container creation_time tag, then the file mtime. Returns
+    None only if none apply (never falls back to the ingest/processing date)."""
+    return (
+        date_from_stem(stem)
+        or probe_creation_date(master_path)
+        or file_mtime_date(master_path)
+    )
 
 
 def move_into_library(src, library_dir) -> Path:

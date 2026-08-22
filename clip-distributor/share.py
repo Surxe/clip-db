@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
-"""Standalone share caller: compress a library clip under the Discord cap, then put
-the result on the clipboard as a *file* so it can be pasted/attached into Discord.
+"""Share a clip to Discord: pick a library master, merge its audio if needed, compress
+it under the upload cap, and put the result on the clipboard as a *file* to paste in.
 
-    share.py latest                       # newest merged master in the library
-    share.py "the goblin combo"           # by stem/substring (merged master preferred)
-    share.py /path/to/anything_merged.mp4  # explicit path
+    share.py                              # pick from the library (newest first)
+    share.py latest                       # newest merged master, no prompt
+    share.py "the goblin combo"           # by stem/substring
+    share.py /path/to/anything.mp4        # explicit path (master or merged)
+    share.py --pick                       # force the picker
     share.py latest --no-clipboard        # just compress
     share.py latest --reveal              # also open the folder for drag-drop
 
-Runs the size-target transcode (compress.compress_for_share), writes the output to a
-share dir (CLIP_SHARE_DIR, default ~/clip-share -- a transport dir, not the library),
-and copies it to the clipboard.
+Orchestrates the full master -> shareable path:
+  1. resolve a clip (picker / "latest" / stem / path),
+  2. if it's a split-audio master with no merged rendition, mix one on demand
+     (clip_core.media.regenerate_merged) -- a temp intermediate, cleaned up after,
+  3. compress the merged rendition under the cap (compress.compress_for_share),
+  4. copy the compressed file to the clipboard.
 
 CLIPBOARD NOTE: this must run inside your own desktop session (needs WAYLAND_DISPLAY +
 XDG_RUNTIME_DIR), as the user that owns that session -- the clipboard is per-user. It
@@ -24,6 +29,7 @@ import argparse
 import os
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 from shutil import which
 
@@ -32,15 +38,54 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # repo root on 
 from clip_core import media  # noqa: E402
 from clip_core.config import load_config  # noqa: E402
 
-from compress import compress_for_share, DISCORD_UNBOOSTED_CAP  # noqa: E402  (sibling module)
+from compress import (  # noqa: E402  (sibling module)
+    DISCORD_UNBOOSTED_CAP,
+    compress_for_share,
+    video_budget_kbps,
+)
+
+# Must match compress_for_share's defaults so the pre-merge feasibility check agrees
+# with what the actual encode would accept.
+_HEADROOM, _AUDIO_KBPS, _MIN_VIDEO_KBPS = 0.90, 96, 350
 
 
 def _default_share_dir() -> Path:
     return Path(os.environ.get("CLIP_SHARE_DIR", str(Path.home() / "clip-share")))
 
 
+def _masters_newest_first(library: Path) -> list[Path]:
+    return sorted(
+        (f for f in library.glob("*.mp4") if media.is_master(f)),
+        key=lambda f: f.stat().st_mtime,
+        reverse=True,
+    )
+
+
+def pick_master(library: Path) -> Path:
+    """Interactive picker: library masters, most recent at the top. Enter selects #1."""
+    if not library.is_dir():
+        sys.exit(f"library not found: {library} (set CLIP_LIBRARY_DIR)")
+    masters = _masters_newest_first(library)
+    if not masters:
+        sys.exit(f"no master clips in {library}")
+
+    print(f"clips in {library} (newest first):")
+    for i, f in enumerate(masters, 1):
+        st = f.stat()
+        when = datetime.fromtimestamp(st.st_mtime).strftime("%Y-%m-%d %H:%M")
+        print(f"  {i:>2}. {when}  {st.st_size / 1024 / 1024:6.0f} MB  {f.name}")
+
+    try:
+        raw = input("select clip [1]: ").strip() or "1"
+    except EOFError:
+        sys.exit("no selection (not a tty)")
+    if not raw.isdigit() or not (1 <= int(raw) <= len(masters)):
+        sys.exit(f"invalid selection: {raw!r}")
+    return masters[int(raw) - 1]
+
+
 def resolve_clip(arg: str, library: Path) -> Path:
-    """Resolve the input to a concrete file.
+    """Resolve a non-picker argument to a concrete file.
 
     - an existing path -> itself
     - "latest"         -> newest *_merged.mp4 in the library by mtime
@@ -49,7 +94,6 @@ def resolve_clip(arg: str, library: Path) -> Path:
     p = Path(arg).expanduser()
     if p.exists():
         return p
-
     if not library.is_dir():
         sys.exit(f"library not found: {library} (set CLIP_LIBRARY_DIR)")
 
@@ -64,14 +108,30 @@ def resolve_clip(arg: str, library: Path) -> Path:
         return merged[0]
 
     key = arg.lower().removesuffix(".mp4")
-    # Prefer a merged master whose stem contains the key; fall back to any mp4.
-    for f in merged:
+    for f in merged:  # prefer a merged master whose stem contains the key
         if key in f.stem.lower():
             return f
-    for f in sorted(library.glob("*.mp4")):
+    for f in sorted(library.glob("*.mp4")):  # fall back to any mp4
         if key in f.stem.lower():
             return f
     sys.exit(f"no clip matching {arg!r} in {library}")
+
+
+def ensure_merged(src: Path, library: Path, workdir: Path) -> tuple[Path, bool]:
+    """Return a single-audio (merged) rendition of `src` and whether it's a temp file.
+
+    A merged input is used as-is. For a master, an existing library sibling is reused;
+    otherwise the mix is regenerated into `workdir` (a temp intermediate to clean up).
+    """
+    if media.is_merged(src):
+        return src, False
+    sibling = library / media.merged_name_for(src)
+    if sibling.exists():
+        return sibling, False
+    out = workdir / media.merged_name_for(src)
+    print(f"  merging audio tracks -> {out.name}")
+    media.regenerate_merged(src, out)
+    return out, True
 
 
 def copy_file_to_clipboard(path: Path) -> None:
@@ -88,10 +148,9 @@ def copy_file_to_clipboard(path: Path) -> None:
     if not which("wl-copy"):
         raise RuntimeError("wl-copy not found (install wl-clipboard)")
     uri = path.resolve().as_uri()
-    # text/uri-list wants CRLF-terminated URIs.
     subprocess.run(
         ["wl-copy", "--type", "text/uri-list"],
-        input=(uri + "\r\n").encode(),
+        input=(uri + "\r\n").encode(),  # text/uri-list wants CRLF-terminated URIs
         check=True,
     )
 
@@ -109,7 +168,8 @@ def _fmt_mib(n: int) -> str:
 def main() -> None:
     cfg = load_config()
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("clip", help='library clip: a path, a stem/substring, or "latest"')
+    ap.add_argument("clip", nargs="?", help='a path, a stem/substring, or "latest"; omit to pick interactively')
+    ap.add_argument("--pick", action="store_true", help="force the interactive picker even if a clip is given")
     ap.add_argument("--out-dir", type=Path, default=_default_share_dir(), help="where to write the compressed file")
     ap.add_argument("--library", type=Path, default=cfg.library_dir)
     ap.add_argument("--cap-bytes", type=int, default=DISCORD_UNBOOSTED_CAP)
@@ -120,14 +180,33 @@ def main() -> None:
                     help="open the folder in the file manager for drag-drop (default: no)")
     args = ap.parse_args()
 
-    src = resolve_clip(args.clip, args.library)
-    args.out_dir.mkdir(parents=True, exist_ok=True)
-    # Strip the _merged suffix from the share copy's name; it's a transport artifact.
-    stem = src.stem.removesuffix("_merged")
-    dst = args.out_dir / f"{stem}_share.mp4"
+    if args.pick or args.clip is None:
+        src = pick_master(args.library)
+    else:
+        src = resolve_clip(args.clip, args.library)
 
-    print(f"compressing {src.name} -> {dst}")
-    result = compress_for_share(src, dst, cap_bytes=args.cap_bytes)
+    # Feasibility BEFORE the (possibly expensive) merge: a clip too long to fit the cap
+    # at usable quality should fail fast, not after mixing a multi-hundred-MB rendition.
+    dur = media.probe_duration(src)
+    if dur is None:
+        sys.exit(f"could not probe duration of {src}")
+    if video_budget_kbps(dur, args.cap_bytes, _HEADROOM, _AUDIO_KBPS) < _MIN_VIDEO_KBPS:
+        sys.exit(
+            f"{src.name}: {dur:.0f}s is too long to fit {_fmt_mib(args.cap_bytes)} at usable "
+            f"quality. Trim it, or share to a boosted server (--cap-bytes)."
+        )
+
+    args.out_dir.mkdir(parents=True, exist_ok=True)
+    merged, is_temp = ensure_merged(src, args.library, args.out_dir)
+    # Name the share copy off the logical stem, not the _merged transport suffix.
+    dst = args.out_dir / f"{media.stem_of(src)}_share.mp4"
+
+    print(f"compressing {merged.name} -> {dst}")
+    try:
+        result = compress_for_share(merged, dst, cap_bytes=args.cap_bytes)
+    finally:
+        if is_temp:
+            merged.unlink(missing_ok=True)  # drop the on-demand merge intermediate
     print(
         f"  {_fmt_mib(result.src_size)} -> {_fmt_mib(result.out_size)} "
         f"({result.out_height}p{result.out_fps:g}, {result.video_kbps}kbps video) "

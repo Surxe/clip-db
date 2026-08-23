@@ -22,6 +22,7 @@ sys.path.insert(0, str(_REPO / "clip-distributor"))     # sibling distributor mo
 
 from mcp.server import MCPServer  # official mcp SDK v2.x (renamed from FastMCP)
 
+from clip_core import discord_queue
 from clip_core import index
 from clip_core import merge as coremerge
 from clip_core import query as querymod
@@ -153,6 +154,49 @@ def prepare_share(stem: str, cap_mb: int = 10, compress: bool = True, force: boo
         "out_fps": result.out_fps,
         "video_kbps": result.video_kbps,
         "clip_post_cmd": f'clip-post "{result.dst}"',
+    }
+
+
+@mcp.tool()
+def queue_discord_post(stem: str, message: str | None = None, cap_mb: int = 10) -> dict:
+    """Queue a clip to be posted to Discord via the webhook — usable from any Claude
+    client (e.g. the phone), since the whole thing runs on the dev box.
+
+    dev can't post to Discord itself (the webhook secret is ethan-owned and unreadable
+    by dev), so this does the dev-side prep — merge + compress to fit cap_mb (10 MiB =
+    the unboosted limit) — then drops a job in the spool queue. An ethan-side watcher
+    consumes the queue and does the actual upload with `clip-post`. If the clip is too
+    long to fit the cap, that error surfaces HERE (before queueing), so you get immediate
+    feedback rather than a silent failure in the watcher.
+
+    Returns the queued job path and the prepared file. The post itself happens
+    asynchronously once the watcher picks the job up.
+    """
+    conn = _conn()
+    clip = _clip_or_raise(conn, stem)
+    merged = coremerge.merge_master(conn, clip.master_path, force=False)
+
+    cap_bytes = cap_mb * 1024 * 1024
+    out_dir = Path(_default_out_dir(cfg.library_dir))
+    out_dir.mkdir(parents=True, exist_ok=True)
+    dst = out_dir / _share_name(merged.stem, cap_bytes)
+    result = compress_for_share(merged.merged_path, dst, cap_bytes=cap_bytes)
+    if not result.under_cap:
+        raise ValueError(
+            f"compressed rendition is still over the {cap_mb} MiB cap "
+            f"({result.out_size} bytes) — trim the clip or raise cap_mb (boosted server)"
+        )
+
+    job = discord_queue.enqueue(cfg.discord_queue_dir, result.dst, message=message, cap_mb=cap_mb)
+    return {
+        "stem": merged.stem,
+        "queued": True,
+        "job_file": str(job),
+        "share_path": str(result.dst),
+        "out_size": result.out_size,
+        "under_cap": result.under_cap,
+        "message": message,
+        "note": "queued for the ethan-side watcher to post via clip-post; upload happens asynchronously",
     }
 
 

@@ -19,6 +19,7 @@ class Config:
     aliases_path: Path
     implications_path: Path
     descriptions_path: Path
+    discord_queue_dir: Path
     model: str
     auto_merge_max_seconds: int
 
@@ -41,6 +42,7 @@ def load_config() -> Config:
         aliases_path=_path("CLIP_ALIASES_PATH", "tag_aliases.json"),
         implications_path=_path("CLIP_IMPLICATIONS_PATH", "tag_implications.json"),
         descriptions_path=_path("CLIP_DESCRIPTIONS_PATH", str(intake_dir / "descriptions.json")),
+        discord_queue_dir=_path("CLIP_DISCORD_QUEUE_DIR", "/srv/dev/clips/discord-queue"),
         model=os.getenv("CLIP_MODEL", "claude-sonnet-4-5"),
         auto_merge_max_seconds=int(os.getenv("CLIP_AUTO_MERGE_MAX_SECONDS", "120")),
     )

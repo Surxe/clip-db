@@ -50,6 +50,7 @@ def env(tmp_path, monkeypatch):
         aliases_path=tmp_path / "tag_aliases.json",
         implications_path=tmp_path / "tag_implications.json",
         descriptions_path=desc_path,
+        discord_queue_dir=tmp_path / "discord-queue",
         model="claude-test",
         auto_merge_max_seconds=120,
     )

@@ -1,22 +1,35 @@
 #!/usr/bin/env python3
-"""clip-viewer MCP: query + retrieval over the clip index, served over stdio.
+"""clip-viewer MCP: query, retrieval, and dev-side media prep over the clip index,
+served over stdio.
 
 Register this with an MCP client (e.g. Claude Code) as a stdio server. It shares
 clip_core with clip-tagger, so the tag vocabulary and query semantics have one definition.
+
+The media-prep tools (merge_audio, prepare_share) do only DEV-side work on the dev-owned
+library. They deliberately stop short of delivery: copying to the clipboard and posting
+to a Discord webhook are ethan-side (the clipboard belongs to ethan's desktop session,
+and the webhook secret is ethan-owned and unreadable by dev). prepare_share therefore
+returns a ready file plus the `clip-post` command for ethan to run.
 """
 from __future__ import annotations
 
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # repo root on sys.path
+_REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(_REPO))                          # repo root on sys.path
+sys.path.insert(0, str(_REPO / "clip-distributor"))     # sibling distributor modules
 
 from mcp.server import MCPServer  # official mcp SDK v2.x (renamed from FastMCP)
 
 from clip_core import index
+from clip_core import merge as coremerge
 from clip_core import query as querymod
 from clip_core.config import load_config
 from clip_core.schema import connect
+
+from compress import compress_for_share  # clip-distributor sibling
+from share import _default_out_dir, _share_name  # clip-distributor sibling
 
 cfg = load_config()
 mcp = MCPServer("clip-viewer")
@@ -73,6 +86,74 @@ def add_tag(stem: str, tag: str) -> dict:
     conn = _conn()
     index.add_tag(conn, stem, tag)
     return _clip_dict(index.get_clip(conn, stem))
+
+
+def _clip_or_raise(conn, stem: str) -> index.Clip:
+    clip = index.get_clip(conn, stem)
+    if clip is None:
+        raise ValueError(f"no indexed clip with stem {stem!r}")
+    return clip
+
+
+@mcp.tool()
+def merge_audio(stem: str, force: bool = False) -> dict:
+    """Mix a clip's split audio tracks into its _merged.mp4 and attach it to the index.
+
+    Idempotent: an existing merged rendition is reused unless force=True. Pure dev-side
+    work on the library — no clipboard or Discord (those are ethan-side, see prepare_share).
+    """
+    conn = _conn()
+    clip = _clip_or_raise(conn, stem)
+    r = coremerge.merge_master(conn, clip.master_path, force=force)
+    return {"stem": r.stem, "status": r.status, "merged_path": r.merged_path}
+
+
+@mcp.tool()
+def prepare_share(stem: str, cap_mb: int = 10, compress: bool = True, force: bool = False) -> dict:
+    """Produce an upload-ready rendition of a clip and return its path.
+
+    Always mixes the split audio into a _merged.mp4 first (reusing an existing one unless
+    force). Then:
+      - compress=True (default): transcode that down to fit cap_mb (10 MiB = the unboosted
+        Discord limit) as <stem>_merged_<cap>mb.mp4 — use for a normal server or a manual
+        paste into an unboosted server.
+      - compress=False: return the merged file uncompressed — for a Nitro-boosted server
+        where the size cap is high and re-encoding is unnecessary.
+
+    Dev-side media prep ONLY. Delivery is ethan-side: paste the returned path into Discord,
+    or send it with the returned `clip_post_cmd` (`clip-post "<path>"`).
+    """
+    conn = _conn()
+    clip = _clip_or_raise(conn, stem)
+    merged = coremerge.merge_master(conn, clip.master_path, force=force)
+
+    if not compress:
+        return {
+            "stem": merged.stem,
+            "merged_path": merged.merged_path,
+            "compressed": False,
+            "note": "merged only (uncompressed) — for a boosted server; paste it into Discord directly",
+        }
+
+    cap_bytes = cap_mb * 1024 * 1024
+    out_dir = Path(_default_out_dir(cfg.library_dir))
+    out_dir.mkdir(parents=True, exist_ok=True)
+    dst = out_dir / _share_name(merged.stem, cap_bytes)
+    result = compress_for_share(merged.merged_path, dst, cap_bytes=cap_bytes)
+    return {
+        "stem": merged.stem,
+        "merged_path": merged.merged_path,
+        "share_path": str(result.dst),
+        "compressed": True,
+        "under_cap": result.under_cap,
+        "src_size": result.src_size,
+        "out_size": result.out_size,
+        "cap_bytes": cap_bytes,
+        "out_height": result.out_height,
+        "out_fps": result.out_fps,
+        "video_kbps": result.video_kbps,
+        "clip_post_cmd": f'clip-post "{result.dst}"',
+    }
 
 
 if __name__ == "__main__":

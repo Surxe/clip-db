@@ -14,7 +14,8 @@
     "triple kill",
     "trio",
     "quad kill",
-    "penta kill"
+    "penta kill",
+    "owen"
   ],
   "games": {
     "War Robots Frontiers": {
@@ -275,6 +276,38 @@
           "heal tank"
         ]
       }
+    },
+    "Valheim": {
+      "groups": {
+        "enemies": [
+          "berserker",
+          "dungeon boss",
+          "golem"
+        ],
+        "mechanics": [
+          "grapple"
+        ]
+      }
+    },
+    "Wynncraft": {
+      "groups": {
+        "events": [
+          "fruma",
+          "fruma gate open"
+        ]
+      }
+    },
+    "Arkheron": {
+      "groups": {}
+    },
+    "Deadlock": {
+      "groups": {}
+    },
+    "Slay the Spire": {
+      "groups": {}
+    },
+    "Sons of the Forest": {
+      "groups": {}
     }
   }
 }

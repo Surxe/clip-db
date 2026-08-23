@@ -80,6 +80,13 @@
           "movement tech"
         ]
       }
+    },
+    "Wynncraft": {
+      "ability_implies": {
+        "fruma gate open": [
+          "fruma"
+        ]
+      }
     }
   }
 }

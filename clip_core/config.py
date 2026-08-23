@@ -22,6 +22,7 @@ class Config:
     discord_queue_dir: Path
     model: str
     auto_merge_max_seconds: int
+    forced_tags_path: Path | None = None
 
 
 def _path(env: str, default: str) -> Path:
@@ -45,4 +46,5 @@ def load_config() -> Config:
         discord_queue_dir=_path("CLIP_DISCORD_QUEUE_DIR", "/srv/dev/clips/discord-queue"),
         model=os.getenv("CLIP_MODEL", "claude-sonnet-4-5"),
         auto_merge_max_seconds=int(os.getenv("CLIP_AUTO_MERGE_MAX_SECONDS", "120")),
+        forced_tags_path=_path("CLIP_FORCED_TAGS_PATH", str(intake_dir / "forced_tags.json")),
     )

@@ -8,6 +8,13 @@ ingest). Progress is saved after every clip, so the run is safe to stop and resu
   describe.py                 # describe masters that have no description yet
   describe.py --all           # revisit every master, pre-filling the current sentence
   describe.py --no-open       # don't launch the player (headless / scripted)
+  describe.py --force-tag "War Robots Frontiers"   # pin a tag on the whole batch (see below)
+
+--force-tag records a tag applied to *every* master in this intake at ingest, without
+writing it into any description and without relying on the classifier -- ideal for a
+single-game batch where you want the game tag guaranteed. Repeatable; the tag must exist
+in the vocabulary (tags.json). It is stored batch-wide in forced_tags.json alongside the
+descriptions manifest and merged into each clip's tags by ingest.py.
 """
 from __future__ import annotations
 
@@ -19,7 +26,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # repo root on 
 
 import argparse
 
-from clip_core import descriptions, media
+from clip_core import descriptions, forced_tags, media
+from clip_core import tags as tagmod
 from clip_core.config import load_config
 
 
@@ -42,9 +50,28 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--all", action="store_true", help="revisit every master, not just undescribed ones")
     ap.add_argument("--no-open", action="store_true", help="do not launch the player")
+    ap.add_argument(
+        "--force-tag", action="append", default=[], metavar="TAG",
+        help="tag forced onto every clip in this intake at ingest (repeatable); recorded "
+             "batch-wide, no need to write it into any description. Must exist in the vocab.",
+    )
     args = ap.parse_args()
 
     cfg = load_config()
+
+    if args.force_tag:
+        vocab = tagmod.load_vocab(cfg.tags_path)
+        normed = [tagmod.normalize(t) for t in args.force_tag]
+        unknown = [t for t in normed if t not in vocab]
+        if unknown:
+            print(f"error: forced tag(s) not in vocabulary (add to {cfg.tags_path} first): {unknown}")
+            sys.exit(1)
+        fmap = forced_tags.load(cfg.forced_tags_path)
+        fmap[forced_tags.ALL] = list(dict.fromkeys(fmap.get(forced_tags.ALL, []) + normed))
+        forced_tags.save(cfg.forced_tags_path, fmap)
+        print(f"Forcing {fmap[forced_tags.ALL]} on every clip in this intake at ingest "
+              f"(saved to {cfg.forced_tags_path}).\n")
+
     manifest = descriptions.load(cfg.descriptions_path)
     masters = list(media.iter_masters(cfg.intake_dir))
     if not masters:

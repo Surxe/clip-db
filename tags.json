@@ -268,12 +268,54 @@
         "status effects": [
           "silence",
           "reveal",
-          "flame dot"
+          "flame dot",
+          "freeze"
         ],
         "support fields": [
           "bubble",
           "nanite",
           "heal tank"
+        ],
+        "builds": [
+          "decker depression",
+          "thunderbird"
+        ],
+        "powerups": [
+          "2x dmg powerup",
+          "powerup"
+        ],
+        "roles": [
+          "artillery"
+        ],
+        "tactics": [
+          "bait",
+          "blueberry",
+          "bodyblock",
+          "killsteal",
+          "targeting"
+        ],
+        "clip potential": [
+          "gif-potential",
+          "short-potential"
+        ],
+        "community": [
+          "against better players",
+          "meta",
+          "mistake",
+          "research",
+          "teaching",
+          "voice chat"
+        ],
+        "players": [
+          "notable-player",
+          "barbarian",
+          "captain caveman",
+          "jason",
+          "junk kicker",
+          "king meat",
+          "kmachine",
+          "phamily guy",
+          "reaper"
         ]
       }
     },
@@ -301,7 +343,18 @@
       "groups": {}
     },
     "Deadlock": {
-      "groups": {}
+      "groups": {
+        "heroes": [
+          "bebop",
+          "graves",
+          "lash"
+        ],
+        "abilities": [
+          "hook",
+          "sticky bomb",
+          "uppercut"
+        ]
+      }
     },
     "Slay the Spire": {
       "groups": {}

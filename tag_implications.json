@@ -78,6 +78,47 @@
         ],
         "Repulsor": [
           "movement tech"
+        ],
+        "decker depression": [
+          "decker"
+        ],
+        "thunderbird": [
+          "movement tech",
+          "halo",
+          "kumo"
+        ],
+        "2x dmg powerup": [
+          "powerup"
+        ],
+        "zenit": [
+          "artillery"
+        ],
+        "freeze": [
+          "cold snap"
+        ],
+        "captain caveman": [
+          "notable-player"
+        ],
+        "barbarian": [
+          "notable-player"
+        ],
+        "kmachine": [
+          "notable-player"
+        ],
+        "reaper": [
+          "notable-player"
+        ],
+        "phamily guy": [
+          "notable-player"
+        ],
+        "king meat": [
+          "notable-player"
+        ],
+        "jason": [
+          "notable-player"
+        ],
+        "junk kicker": [
+          "notable-player"
         ]
       }
     },

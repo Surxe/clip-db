@@ -15,7 +15,9 @@
     "trio",
     "quad kill",
     "penta kill",
-    "owen"
+    "owen",
+    "predict",
+    "lag"
   ],
   "games": {
     "War Robots Frontiers": {
@@ -315,7 +317,26 @@
           "king meat",
           "kmachine",
           "phamily guy",
-          "reaper"
+          "reaper",
+          "davtop",
+          "pig god",
+          "commander",
+          "gio",
+          "dusey",
+          "sgt walburn"
+        ],
+        "modes": [
+          "brawl",
+          "spleef"
+        ],
+        "units": [
+          "titan"
+        ],
+        "objectives": [
+          "quantum core"
+        ],
+        "moments": [
+          "rage quit"
         ]
       }
     },
@@ -347,12 +368,16 @@
         "heroes": [
           "bebop",
           "graves",
-          "lash"
+          "lash",
+          "vindicta"
         ],
         "abilities": [
           "hook",
           "sticky bomb",
           "uppercut"
+        ],
+        "items": [
+          "alchemical flask"
         ]
       }
     },

@@ -215,7 +215,8 @@
           "wave",
           "surf dash",
           "surf",
-          "ramp dash"
+          "ramp dash",
+          "schmovement"
         ],
         "decker": [
           "hiv"
@@ -246,6 +247,13 @@
         ],
         "king meat": [
           "meat"
+        ],
+        "davtop": [
+          "dav"
+        ],
+        "sgt walburn": [
+          "walburn",
+          "sgt"
         ]
       }
     }

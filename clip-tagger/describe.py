@@ -8,6 +8,7 @@ ingest). Progress is saved after every clip, so the run is safe to stop and resu
   describe.py                 # describe masters that have no description yet
   describe.py --all           # revisit every master, pre-filling the current sentence
   describe.py --no-open       # don't launch the player (headless / scripted)
+  describe.py --default-to-filename   # offer each clip's filename as a default to confirm (Enter) or edit
   describe.py --force-tag "War Robots Frontiers"   # pin a tag on the whole batch (see below)
 
 --force-tag records a tag applied to *every* master in this intake at ingest, without
@@ -51,6 +52,12 @@ def main() -> None:
     ap.add_argument("--all", action="store_true", help="revisit every master, not just undescribed ones")
     ap.add_argument("--no-open", action="store_true", help="do not launch the player")
     ap.add_argument(
+        "--default-to-filename", action="store_true",
+        help="pre-fill each undescribed clip's description with its filename; press Enter to "
+             "confirm that default (it gets saved) or type to replace it -- so a filename is "
+             "never silently assumed, you confirm each one",
+    )
+    ap.add_argument(
         "--force-tag", action="append", default=[], metavar="TAG",
         help="tag forced onto every clip in this intake at ingest (repeatable); recorded "
              "batch-wide, no need to write it into any description. Must exist in the vocab.",
@@ -88,9 +95,13 @@ def main() -> None:
         stem = media.stem_of(master)
         duration = media.probe_duration(master)
         current = manifest.get(stem, "")
+        # For an undescribed clip, optionally offer the filename as a default to confirm.
+        is_unsaved_default = not current and args.default_to_filename
+        if is_unsaved_default:
+            current = stem
         print(f"[{i}/{len(todo)}] {stem}  (dur={duration})")
         if current:
-            print(f"  current: {current}")
+            print(f"  {'default' if is_unsaved_default else 'current'}: {current}")
         if not args.no_open:
             _open_in_player(master)
         try:
@@ -99,7 +110,12 @@ def main() -> None:
             print("\n(end of input)")
             break
         if not sentence:
-            print("  (kept)" if current else "  (skipped)")
+            if is_unsaved_default:  # Enter confirms the filename default -> save it
+                manifest[stem] = current
+                descriptions.save(cfg.descriptions_path, manifest)
+                print("  (confirmed default)")
+            else:
+                print("  (kept)" if current else "  (skipped)")
             continue
         manifest[stem] = sentence
         descriptions.save(cfg.descriptions_path, manifest)

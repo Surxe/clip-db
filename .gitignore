@@ -7,5 +7,4 @@ __pycache__/
 *.sqlite3
 .pytest_cache/
 personal/
-
-evals/.cache
+evals/.cache/

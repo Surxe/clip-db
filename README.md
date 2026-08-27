@@ -18,8 +18,9 @@ clip-distributor/     # compress.py + share.py — size-fit a clip under the Dis
 1. Record on Windows or Linux. A separate (user-owned) step drops clips into the
    shared staging dir `os-shared/transfer/clips/` (`/mnt/os-shared/transfer/clips` on Linux).
 2. `clip-tagger/ingest.py` moves each **master** out of staging into the ext4 library,
-   probes metadata, classifies the description against the vocab, writes an index row, and
-   generates its mixed-audio `*_merged.mp4` in the library (short masters only, gated by
+   probes metadata, classifies the description provided the user as user-in-the-loop against the vocab, 
+   writes an index row, and generates its mixed-audio `*_merged.mp4` 
+   in the library (short masters only, gated by
    `CLIP_AUTO_MERGE_MAX_SECONDS`; `--no-merge` opts out). Masters are `*.mp4` excluding
    `*_merged.mp4`; merged files are regenerable build output (`merge.py` rebuilds them).
 3. `clip-viewer-mcp/server.py` exposes query + retrieval tools to an MCP client (Claude Code).
@@ -51,7 +52,7 @@ cp .env.example .env                            # then edit paths
 .venv/bin/pytest
 ```
 
-Paths are configured entirely via `.env` (see `.env.example`) so the repo stays generic.
+Paths are configured entirely via `.env` (see `.env.example`).
 Classification runs through the **`claude` CLI** (Claude Code in print mode), so it bills
 against your logged-in Claude subscription — no Anthropic API key. The CLI must be on `PATH`
 and authenticated (run `claude` once to log in). `CLIP_MODEL` (default `claude-sonnet-4-5`)

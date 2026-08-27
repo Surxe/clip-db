@@ -17,7 +17,10 @@
     "penta kill",
     "owen",
     "predict",
-    "lag"
+    "lag",
+    "bug",
+    "exploit",
+    "line of sight"
   ],
   "games": {
     "War Robots Frontiers": {
@@ -293,6 +296,8 @@
           "bait",
           "blueberry",
           "bodyblock",
+          "crusher",
+          "fake wall",
           "killsteal",
           "targeting"
         ],
@@ -324,7 +329,8 @@
           "gio",
           "dusey",
           "sgt walburn",
-          "alzen"
+          "alzen",
+          "ataque"
         ],
         "modes": [
           "brawl",

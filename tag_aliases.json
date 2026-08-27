@@ -254,6 +254,18 @@
         "sgt walburn": [
           "walburn",
           "sgt"
+        ],
+        "Ripper": [
+          "beyblade"
+        ],
+        "crusher": [
+          "press"
+        ],
+        "line of sight": [
+          "los"
+        ],
+        "bug": [
+          "glitch"
         ]
       }
     }

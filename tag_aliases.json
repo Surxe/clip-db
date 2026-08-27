@@ -2,71 +2,290 @@
   "games": {
     "War Robots Frontiers": {
       "aliases": {
-        "Snake Catcher": ["snaketrap", "cage", "trap"],
-        "Ammo Fabricator": ["ammo fab", "fab"],
-        "Blast Wave": ["blast"],
-        "Death Ray": ["laser", "beam"],
-        "Emergency Shield": ["emergency", "eshield"],
-        "Energy Wall": ["wall"],
-        "Flashbang": ["flash"],
-        "Fuel Burn": ["burn"],
-        "Fuel Reserve": ["reserve"],
-        "Gamma Beam": ["gamma"],
-        "Ghost Turret": ["turret"],
-        "Grappling": ["grapple", "hook"],
-        "Holographic Decoy": ["decoy"],
-        "Homing Salvo": ["salvo"],
-        "Hunter's Mark": ["mark"],
-        "Infinite Ammo": ["inf ammo"],
-        "Iron Veil": ["veil"],
-        "Kinetic Pulse": ["pulse", "kinetic knockback"],
-        "Minefield": ["mines"],
-        "Paladin's Ward": ["ward"],
-        "Reflector": ["reflect"],
-        "Rejuvenator": ["rejuv"],
-        "Repair Drone": ["heal drone"],
-        "Sprint Reactor": ["sprint"],
-        "Translocator": ["teleport", "tp"],
-        "Whiplash": ["whip", "scorpion damage"],
-        "Absorber Sphere": ["absorb"],
-        "Cold Snap": ["freeze"],
-        "Chain Overload": ["cancer", "virus"],
-        "Galvanic Screen": ["volta shield"],
-        "Guardian Matrix": ["ravana resist", "ravana tank"],
-        "Ion Disruptor": ["norna silence"],
-        "Ragnarok": ["fenrir damage"],
-        "Short Circuit": ["volta silence"],
-        "Steel Feathers": ["raven damage"],
-        "Warp Scythe": ["grim tp", "grim dash"],
-        "Flaming Rider": ["fire poop"],
-        "Ion Volley": ["snowball", "norna damage"],
-        "Orbital Strike": ["nuke"],
-        "Supply Surge": ["surge"],
-        "Suppressor": ["suppress"],
-        "Winged Drone": ["hitcher damage"],
-        "Camouflage Web": ["web", "anansi cloak", "anansi invis"],
-        "Invisible": ["stealth", "invis", "camo", "cloak"],
-        "Optical Camo": ["pursuer cloak", "pursuer invis", "pursuer camo"],
-        "Bulgasari": ["bulg", "bulga"],
-        "Relic Bulgasari": ["relic bulga"],
-        "Lancelot": ["lance"],
-        "Relic Lancelot": ["relic lance"],
-        "Matriarch": ["matri"],
-        "Purifier": ["puri"],
-        "Scorpion": ["scorp"],
-        "Varangian": ["varan"],
-        "I.O.N.": ["ion"],
-        "Incinerator": ["incin"],
-        "Magneto": ["mag"],
-        "Railgun": ["rail"],
-        "Relic Orkan": ["relic ork"],
-        "Relic Thunder": ["relic thund"],
-        "Shocktrain": ["shock"],
-        "Stormpike": ["storm"],
-        "Trebuchet": ["treb"],
-        "Parasite Protocol": ["parasite"],
-        "Chemical Hazard": ["chem haz", "chem hazard"],
-        "movement tech": ["goblin", "wave dash", "wave", "surf dash", "surf", "ramp dash"]
+        "Snake Catcher": [
+          "snaketrap",
+          "cage",
+          "trap"
+        ],
+        "Ammo Fabricator": [
+          "ammo fab",
+          "fab"
+        ],
+        "Blast Wave": [
+          "blast"
+        ],
+        "Death Ray": [
+          "laser",
+          "beam"
+        ],
+        "Emergency Shield": [
+          "emergency",
+          "eshield"
+        ],
+        "Energy Wall": [
+          "wall"
+        ],
+        "Flashbang": [
+          "flash"
+        ],
+        "Fuel Burn": [
+          "burn"
+        ],
+        "Fuel Reserve": [
+          "reserve"
+        ],
+        "Gamma Beam": [
+          "gamma"
+        ],
+        "Ghost Turret": [
+          "turret"
+        ],
+        "Holographic Decoy": [
+          "decoy"
+        ],
+        "Homing Salvo": [
+          "salvo"
+        ],
+        "Hunter's Mark": [
+          "mark"
+        ],
+        "Infinite Ammo": [
+          "inf ammo"
+        ],
+        "Iron Veil": [
+          "veil"
+        ],
+        "Kinetic Pulse": [
+          "pulse",
+          "kinetic knockback"
+        ],
+        "Minefield": [
+          "mines"
+        ],
+        "Paladin's Ward": [
+          "ward"
+        ],
+        "Reflector": [
+          "reflect"
+        ],
+        "Rejuvenator": [
+          "rejuv"
+        ],
+        "Repair Drone": [
+          "heal drone"
+        ],
+        "Sprint Reactor": [
+          "sprint"
+        ],
+        "Translocator": [
+          "teleport",
+          "tp"
+        ],
+        "Whiplash": [
+          "whip",
+          "scorpion damage"
+        ],
+        "Absorber Sphere": [
+          "absorb"
+        ],
+        "Chain Overload": [
+          "cancer",
+          "virus"
+        ],
+        "Galvanic Screen": [
+          "volta shield"
+        ],
+        "Guardian Matrix": [
+          "ravana resist",
+          "ravana tank"
+        ],
+        "Ion Disruptor": [
+          "norna silence"
+        ],
+        "Ragnarok": [
+          "fenrir damage"
+        ],
+        "Short Circuit": [
+          "volta silence"
+        ],
+        "Steel Feathers": [
+          "raven damage"
+        ],
+        "Warp Scythe": [
+          "grim tp",
+          "grim dash"
+        ],
+        "Flaming Rider": [
+          "fire poop"
+        ],
+        "Ion Volley": [
+          "snowball",
+          "norna damage"
+        ],
+        "Orbital Strike": [
+          "nuke"
+        ],
+        "Supply Surge": [
+          "surge"
+        ],
+        "Suppressor": [
+          "suppress"
+        ],
+        "Winged Drone": [
+          "hitcher damage"
+        ],
+        "Camouflage Web": [
+          "web",
+          "anansi cloak",
+          "anansi invis"
+        ],
+        "Invisible": [
+          "stealth",
+          "invis",
+          "camo",
+          "cloak"
+        ],
+        "Optical Camo": [
+          "pursuer cloak",
+          "pursuer invis",
+          "pursuer camo"
+        ],
+        "Bulgasari": [
+          "bulg",
+          "bulga"
+        ],
+        "Relic Bulgasari": [
+          "relic bulga"
+        ],
+        "Lancelot": [
+          "lance"
+        ],
+        "Relic Lancelot": [
+          "relic lance"
+        ],
+        "Matriarch": [
+          "matri"
+        ],
+        "Purifier": [
+          "puri"
+        ],
+        "Scorpion": [
+          "scorp"
+        ],
+        "Varangian": [
+          "varan"
+        ],
+        "I.O.N.": [
+          "ion"
+        ],
+        "Incinerator": [
+          "incin"
+        ],
+        "Magneto": [
+          "mag"
+        ],
+        "Railgun": [
+          "rail"
+        ],
+        "Relic Orkan": [
+          "relic ork"
+        ],
+        "Relic Thunder": [
+          "relic thund"
+        ],
+        "Shocktrain": [
+          "shock"
+        ],
+        "Stormpike": [
+          "storm"
+        ],
+        "Trebuchet": [
+          "treb"
+        ],
+        "Parasite Protocol": [
+          "parasite"
+        ],
+        "Chemical Hazard": [
+          "chem haz",
+          "chem hazard"
+        ],
+        "movement tech": [
+          "goblin",
+          "wave dash",
+          "wave",
+          "surf dash",
+          "surf",
+          "ramp dash",
+          "schmovement"
+        ],
+        "decker": [
+          "hiv"
+        ],
+        "2x dmg powerup": [
+          "2x"
+        ],
+        "targeting": [
+          "focusing"
+        ],
+        "mistake": [
+          "misplay"
+        ],
+        "against better players": [
+          "outmatched",
+          "sweats"
+        ],
+        "barbarian": [
+          "barb"
+        ],
+        "captain caveman": [
+          "pocket",
+          "captain"
+        ],
+        "phamily guy": [
+          "hamily",
+          "hamily guy"
+        ],
+        "king meat": [
+          "meat"
+        ],
+        "davtop": [
+          "dav"
+        ],
+        "sgt walburn": [
+          "walburn",
+          "sgt"
+        ],
+        "Ripper": [
+          "beyblade"
+        ],
+        "crusher": [
+          "press"
+        ],
+        "line of sight": [
+          "los"
+        ],
+        "bug": [
+          "glitch"
+        ],
+        "Recon Mode": [
+          "recon"
+        ],
+        "hit reg": [
+          "hitreg"
+        ],
+        "frame drop": [
+          "fps drop"
+        ],
+        "premade": [
+          "6 stack",
+          "6stack"
+        ],
+        "zoning": [
+          "area denial"
+        ],
+        "noachium": [
+          "noach"
+        ]
       }
     }
   }

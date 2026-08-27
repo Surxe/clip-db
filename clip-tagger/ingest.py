@@ -25,7 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # repo root on 
 
 import argparse
 
-from clip_core import descriptions, index, media, merge
+from clip_core import descriptions, forced_tags, index, media, merge
 from clip_core import tags as tagmod
 from clip_core.classify import llm_classify_batch
 from clip_core.config import load_config
@@ -45,6 +45,16 @@ def main() -> None:
     relations = TagRelations.load(cfg.aliases_path, cfg.implications_path)
     conn = connect(cfg.index_path)
     manifest = descriptions.load(cfg.descriptions_path)
+
+    # Forced tags: applied to every clip at ingest regardless of the classifier (e.g. the
+    # game tag for a single-game batch). Fail fast if any isn't in the vocabulary.
+    forced_map = forced_tags.load(cfg.forced_tags_path) if cfg.forced_tags_path else {}
+    unknown_forced = sorted({t for lst in forced_map.values() for t in lst} - set(vocab.as_list()))
+    if unknown_forced:
+        print(f"error: forced tag(s) not in vocabulary (add to {cfg.tags_path}): {unknown_forced}")
+        return
+    if forced_map.get(forced_tags.ALL):
+        print(f"Forcing {forced_map[forced_tags.ALL]} on every clip in this batch.\n")
 
     masters = list(media.iter_masters(cfg.intake_dir))
     if not masters:
@@ -72,7 +82,11 @@ def main() -> None:
         duration = media.probe_duration(m)
         description = manifest.get(stem)
         result = classified.get(stem)
-        tags = result.tags if result else []
+        tags = list(result.tags) if result else []
+        # Merge forced tags (batch-wide "*" plus per-stem), keeping classifier order.
+        for t in forced_tags.for_stem(forced_map, stem):
+            if t not in tags:
+                tags.append(t)
         proposed = result.proposed_tag if result else None
         if proposed:
             proposals[stem] = proposed

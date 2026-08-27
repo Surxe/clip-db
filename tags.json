@@ -14,7 +14,23 @@
     "triple kill",
     "trio",
     "quad kill",
-    "penta kill"
+    "penta kill",
+    "owen",
+    "predict",
+    "lag",
+    "bug",
+    "exploit",
+    "line of sight",
+    "hit reg",
+    "frame drop",
+    "outplay",
+    "flank",
+    "escape",
+    "premade",
+    "camper",
+    "zoning",
+    "rollout",
+    "ping"
   ],
   "games": {
     "War Robots Frontiers": {
@@ -267,14 +283,164 @@
         "status effects": [
           "silence",
           "reveal",
-          "flame dot"
+          "flame dot",
+          "freeze"
         ],
         "support fields": [
           "bubble",
           "nanite",
           "heal tank"
+        ],
+        "builds": [
+          "decker depression",
+          "thunderbird"
+        ],
+        "powerups": [
+          "2x dmg powerup",
+          "powerup",
+          "gold shield",
+          "refresh"
+        ],
+        "roles": [
+          "artillery"
+        ],
+        "tactics": [
+          "bait",
+          "blueberry",
+          "bodyblock",
+          "crusher",
+          "fake wall",
+          "killsteal",
+          "targeting"
+        ],
+        "clip potential": [
+          "gif-potential",
+          "short-potential"
+        ],
+        "community": [
+          "against better players",
+          "meta",
+          "mistake",
+          "research",
+          "teaching",
+          "voice chat"
+        ],
+        "players": [
+          "notable-player",
+          "barbarian",
+          "captain caveman",
+          "jason",
+          "junk kicker",
+          "king meat",
+          "kmachine",
+          "phamily guy",
+          "reaper",
+          "davtop",
+          "pig god",
+          "commander",
+          "gio",
+          "dusey",
+          "sgt walburn",
+          "alzen",
+          "ataque",
+          "titanpower123",
+          "majkyn",
+          "salmon eater",
+          "hex",
+          "revis",
+          "troll hulk",
+          "ministry stat",
+          "rnnad"
+        ],
+        "modes": [
+          "brawl",
+          "spleef",
+          "quantum core",
+          "spearhead"
+        ],
+        "objectives": [
+          "probe"
+        ],
+        "units": [
+          "titan"
+        ],
+        "moments": [
+          "rage quit",
+          "ragdoll"
+        ],
+        "pilots": [
+          "\"Dredge\" Collins",
+          "Carmen Ruiz",
+          "Duncan Prasad",
+          "Emma James",
+          "Ever pilot",
+          "Giancarlo pilot",
+          "Idy Demerost",
+          "Kate Sinclair",
+          "Marcus Shedd",
+          "Sora Sing"
+        ],
+        "ranks": [
+          "noachium"
         ]
       }
+    },
+    "Valheim": {
+      "groups": {
+        "enemies": [
+          "berserker",
+          "dungeon boss",
+          "golem"
+        ],
+        "mechanics": [
+          "grapple"
+        ]
+      }
+    },
+    "Wynncraft": {
+      "groups": {
+        "events": [
+          "fruma",
+          "fruma gate open"
+        ]
+      }
+    },
+    "Arkheron": {
+      "groups": {}
+    },
+    "Deadlock": {
+      "groups": {
+        "heroes": [
+          "bebop",
+          "graves",
+          "lash",
+          "vindicta"
+        ],
+        "abilities": [
+          "hook",
+          "rescue beam",
+          "sticky bomb",
+          "uppercut",
+          "death slam",
+          "ground pound",
+          "flog",
+          "graves wall",
+          "silence wave"
+        ],
+        "items": [
+          "alchemical flask",
+          "vortex web"
+        ],
+        "mechanics": [
+          "zipline"
+        ]
+      }
+    },
+    "Slay the Spire": {
+      "groups": {}
+    },
+    "Sons of the Forest": {
+      "groups": {}
     }
   }
 }

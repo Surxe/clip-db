@@ -10,6 +10,10 @@ lists can be regenerated when the game updates, rather than hand-maintained.
                  is already listed under abilities (avoids the modules/abilities duplicate).
   abilities:     all abilities (no production_status filter) -- includes each torso's ability
                  and every ability-slot gadget (Umbrella, Repulsor, ...)
+  pilots:        Legendary pilots only (pilot_type_ref ends Legendary.0) -- the unique named
+                 pilots, by full name (first_name + second_name). The 72 Common pilots are
+                 procedurally-named filler crew, not tags. A pilot with a blank second_name
+                 (Ever, Giancarlo) gets "pilot" appended so the tag isn't a bare first name.
   pilot talents: all pilot talents (no production_status filter)
   excluded:      "Mk. I" / "Mk. II" variant names
   names:         each entry's name.en; groups are distinct + sorted
@@ -38,11 +42,35 @@ DEFAULT_OBJECTS = os.environ.get(
 )
 
 
+def _en(value) -> str | None:
+    """English string from a localized {en/Key} dict, or the value itself."""
+    if isinstance(value, dict):
+        return value.get("en") or value.get("Key")
+    return value
+
+
 def _name_en(entry: dict) -> str | None:
-    name = entry.get("name")
-    if isinstance(name, dict):
-        return name.get("en") or name.get("Key")
-    return name
+    return _en(entry.get("name"))
+
+
+def _pilot_name(entry: dict) -> str | None:
+    """Legendary pilot's full display name 'First Last'.
+
+    Pilots carry names in first_name/second_name (localized dicts), not name.
+    Three shapes occur in the data:
+      - no second_name key      -> first_name already holds the full name
+                                    (Halloween pilots: '"Dredge" Collins') -> use as-is
+      - blank/whitespace second -> pilot has no surname (Ever, Giancarlo);
+                                    append 'pilot' so the tag isn't a bare first name
+      - real second_name        -> 'First Second' (Carmen Ruiz, Sora Sing)
+    """
+    first = (_en(entry.get("first_name")) or "").strip()
+    if not first:
+        return None
+    if "second_name" not in entry:
+        return first
+    last = (_en(entry.get("second_name")) or "").strip()
+    return f"{first} {last}" if last else f"{first} pilot"
 
 
 def _distinct_sorted(names) -> list[str]:
@@ -52,6 +80,7 @@ def _distinct_sorted(names) -> list[str]:
 def extract(objects_dir: Path) -> dict:
     modules = json.loads((objects_dir / "Module.json").read_text())
     abilities = json.loads((objects_dir / "Ability.json").read_text())
+    pilots = json.loads((objects_dir / "Pilot.json").read_text())
     talents = json.loads((objects_dir / "PilotTalent.json").read_text())
 
     weapons, other_modules = [], []
@@ -75,11 +104,16 @@ def extract(objects_dir: Path) -> dict:
 
     ability_names = [_name_en(e) for e in abilities.values()]
     talent_names = [_name_en(e) for e in talents.values()]
+    pilot_names = [
+        _pilot_name(e) for e in pilots.values()
+        if (e.get("pilot_type_ref") or "").endswith("Legendary.0")
+    ]
 
     groups = {
         "weapons": _distinct_sorted(weapons),
         "modules": _distinct_sorted(other_modules),
         "abilities": _distinct_sorted(ability_names),
+        "pilots": _distinct_sorted(pilot_names),
         "pilot talents": _distinct_sorted(talent_names),
     }
 

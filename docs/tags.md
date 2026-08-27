@@ -96,8 +96,8 @@ The extractor only rewrites `ability_to_module`, so `ability_implies` is
 ### Effect tags (hand-maintained groups)
 The implication targets above (`stealth`, `reveal`, `silence`, `bubble`, …) are
 themselves tags, grouped by hand under the WRF block (`concealment`,
-`status effects`, `support fields`). `extract_wrf_tags.py` refreshes only the four
-generated groups (weapons/modules/abilities/pilot talents), so these manual groups
+`status effects`, `support fields`). `extract_wrf_tags.py` refreshes only the five
+generated groups (weapons/modules/abilities/pilots/pilot talents), so these manual groups
 are **refresh-safe** too. Add new effect tags directly to `tags.json`.
 
 Both files are wired through config (`CLIP_ALIASES_PATH`, `CLIP_IMPLICATIONS_PATH`)
@@ -136,7 +136,7 @@ diff and commit.
 The underlying extractor is [`scripts/extract_wrf_tags.py`](../scripts/extract_wrf_tags.py)
 (usable standalone; prints the block to stdout without `--merge`). The extraction logic:
 
-- **Source:** `current/Objects/Module.json`, `Ability.json`, and `PilotTalent.json`.
+- **Source:** `current/Objects/Module.json`, `Ability.json`, `Pilot.json`, and `PilotTalent.json`.
 - **Name field:** each entry's `name.en`.
 - **Modules:** only `production_status == "Ready"`, split by `module_type_ref`:
   contains `"Weapon"` → **weapons** group; contains `"Ability"` → **excluded** (an
@@ -148,6 +148,12 @@ The underlying extractor is [`scripts/extract_wrf_tags.py`](../scripts/extract_w
   *Snake Catcher*, which lands here) — the community nicknames for those abilities
   (snaketrap / cage / trap …) are not in the game data and are handled separately as
   tag aliasing, not extraction.
+- **Pilots:** only `Pilot.json` entries whose `pilot_type_ref` ends `Legendary.0` (the 10
+  unique named pilots) → **pilots** group. The 72 `Common` pilots are procedurally-named filler
+  crew and are excluded. Pilots are named by **full name** (`first_name` + `second_name`,
+  localized `.en`), not `name.en`. Three data shapes: no `second_name` key → `first_name`
+  already holds the full name (Halloween pilots); a blank `second_name` → the pilot has no
+  surname (Ever, Giancarlo) so `pilot` is appended (`ever pilot`); otherwise `First Second`.
 - **Pilot talents:** all `PilotTalent.json` entries, no status filter → **pilot talents** group.
 - **Excluded:** `Mk. I` / `Mk. II` variant names (relic/titan tier duplicates).
 - Each group is distinct + sorted.

@@ -78,6 +78,108 @@
         ],
         "Repulsor": [
           "movement tech"
+        ],
+        "decker depression": [
+          "decker"
+        ],
+        "thunderbird": [
+          "movement tech",
+          "halo",
+          "kumo"
+        ],
+        "2x dmg powerup": [
+          "powerup"
+        ],
+        "refresh": [
+          "powerup"
+        ],
+        "probe": [
+          "spearhead"
+        ],
+        "zenit": [
+          "artillery"
+        ],
+        "freeze": [
+          "cold snap"
+        ],
+        "captain caveman": [
+          "notable-player"
+        ],
+        "barbarian": [
+          "notable-player"
+        ],
+        "kmachine": [
+          "notable-player"
+        ],
+        "reaper": [
+          "notable-player"
+        ],
+        "phamily guy": [
+          "notable-player"
+        ],
+        "king meat": [
+          "notable-player"
+        ],
+        "jason": [
+          "notable-player"
+        ],
+        "junk kicker": [
+          "notable-player"
+        ],
+        "davtop": [
+          "notable-player"
+        ],
+        "pig god": [
+          "notable-player"
+        ],
+        "commander": [
+          "notable-player"
+        ],
+        "gio": [
+          "notable-player"
+        ],
+        "dusey": [
+          "notable-player"
+        ],
+        "sgt walburn": [
+          "notable-player"
+        ],
+        "alzen": [
+          "notable-player"
+        ],
+        "ataque": [
+          "notable-player"
+        ],
+        "titanpower123": [
+          "notable-player"
+        ],
+        "majkyn": [
+          "notable-player"
+        ],
+        "salmon eater": [
+          "notable-player"
+        ],
+        "hex": [
+          "notable-player"
+        ],
+        "revis": [
+          "notable-player"
+        ],
+        "troll hulk": [
+          "notable-player"
+        ],
+        "ministry stat": [
+          "notable-player"
+        ],
+        "rnnad": [
+          "notable-player"
+        ]
+      }
+    },
+    "Wynncraft": {
+      "ability_implies": {
+        "fruma gate open": [
+          "fruma"
         ]
       }
     }

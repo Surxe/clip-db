@@ -342,7 +342,8 @@
           "ataque",
           "titanpower123",
           "majkyn",
-          "salmon eater"
+          "salmon eater",
+          "hex"
         ],
         "modes": [
           "brawl",
@@ -357,6 +358,18 @@
         "moments": [
           "rage quit",
           "ragdoll"
+        ],
+        "pilots": [
+          "\"Dredge\" Collins",
+          "Carmen",
+          "Duncan",
+          "Emma James",
+          "Ever",
+          "Giancarlo",
+          "Idy",
+          "Kate",
+          "Marcus",
+          "Sora"
         ]
       }
     },

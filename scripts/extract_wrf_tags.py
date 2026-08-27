@@ -10,6 +10,9 @@ lists can be regenerated when the game updates, rather than hand-maintained.
                  is already listed under abilities (avoids the modules/abilities duplicate).
   abilities:     all abilities (no production_status filter) -- includes each torso's ability
                  and every ability-slot gadget (Umbrella, Repulsor, ...)
+  pilots:        Legendary pilots only (pilot_type_ref ends Legendary.0) -- the unique named
+                 pilots. The 72 Common pilots are procedurally-named filler crew, not tags.
+                 Pilot names live in first_name.en, not name.en.
   pilot talents: all pilot talents (no production_status filter)
   excluded:      "Mk. I" / "Mk. II" variant names
   names:         each entry's name.en; groups are distinct + sorted
@@ -45,6 +48,14 @@ def _name_en(entry: dict) -> str | None:
     return name
 
 
+def _pilot_name(entry: dict) -> str | None:
+    # Pilots carry their display name in first_name (a localized dict), not name.
+    name = entry.get("first_name")
+    if isinstance(name, dict):
+        return name.get("en") or name.get("Key")
+    return name
+
+
 def _distinct_sorted(names) -> list[str]:
     return sorted(dict.fromkeys(n for n in names if n))
 
@@ -52,6 +63,7 @@ def _distinct_sorted(names) -> list[str]:
 def extract(objects_dir: Path) -> dict:
     modules = json.loads((objects_dir / "Module.json").read_text())
     abilities = json.loads((objects_dir / "Ability.json").read_text())
+    pilots = json.loads((objects_dir / "Pilot.json").read_text())
     talents = json.loads((objects_dir / "PilotTalent.json").read_text())
 
     weapons, other_modules = [], []
@@ -75,11 +87,16 @@ def extract(objects_dir: Path) -> dict:
 
     ability_names = [_name_en(e) for e in abilities.values()]
     talent_names = [_name_en(e) for e in talents.values()]
+    pilot_names = [
+        _pilot_name(e) for e in pilots.values()
+        if (e.get("pilot_type_ref") or "").endswith("Legendary.0")
+    ]
 
     groups = {
         "weapons": _distinct_sorted(weapons),
         "modules": _distinct_sorted(other_modules),
         "abilities": _distinct_sorted(ability_names),
+        "pilots": _distinct_sorted(pilot_names),
         "pilot talents": _distinct_sorted(talent_names),
     }
 

@@ -28,7 +28,9 @@
     "escape",
     "premade",
     "camper",
-    "zoning"
+    "zoning",
+    "rollout",
+    "ping"
   ],
   "games": {
     "War Robots Frontiers": {
@@ -353,7 +355,11 @@
         "modes": [
           "brawl",
           "spleef",
-          "quantum core"
+          "quantum core",
+          "spearhead"
+        ],
+        "objectives": [
+          "probe"
         ],
         "units": [
           "titan"
@@ -364,15 +370,15 @@
         ],
         "pilots": [
           "\"Dredge\" Collins",
-          "Carmen",
-          "Duncan",
+          "Carmen Ruiz",
+          "Duncan Prasad",
           "Emma James",
-          "Ever",
-          "Giancarlo",
-          "Idy",
-          "Kate",
-          "Marcus",
-          "Sora"
+          "Ever pilot",
+          "Giancarlo pilot",
+          "Idy Demerost",
+          "Kate Sinclair",
+          "Marcus Shedd",
+          "Sora Sing"
         ],
         "ranks": [
           "noachium"

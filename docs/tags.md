@@ -150,7 +150,10 @@ The underlying extractor is [`scripts/extract_wrf_tags.py`](../scripts/extract_w
   tag aliasing, not extraction.
 - **Pilots:** only `Pilot.json` entries whose `pilot_type_ref` ends `Legendary.0` (the 10
   unique named pilots) → **pilots** group. The 72 `Common` pilots are procedurally-named filler
-  crew and are excluded. Pilot display names come from `first_name.en`, not `name.en`.
+  crew and are excluded. Pilots are named by **full name** (`first_name` + `second_name`,
+  localized `.en`), not `name.en`. Three data shapes: no `second_name` key → `first_name`
+  already holds the full name (Halloween pilots); a blank `second_name` → the pilot has no
+  surname (Ever, Giancarlo) so `pilot` is appended (`ever pilot`); otherwise `First Second`.
 - **Pilot talents:** all `PilotTalent.json` entries, no status filter → **pilot talents** group.
 - **Excluded:** `Mk. I` / `Mk. II` variant names (relic/titan tier duplicates).
 - Each group is distinct + sorted.

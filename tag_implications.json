@@ -93,6 +93,9 @@
         "refresh": [
           "powerup"
         ],
+        "probe": [
+          "spearhead"
+        ],
         "zenit": [
           "artillery"
         ],

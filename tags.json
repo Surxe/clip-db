@@ -20,7 +20,13 @@
     "lag",
     "bug",
     "exploit",
-    "line of sight"
+    "line of sight",
+    "hit reg",
+    "frame drop",
+    "outplay",
+    "flank",
+    "escape",
+    "premade"
   ],
   "games": {
     "War Robots Frontiers": {
@@ -287,7 +293,8 @@
         ],
         "powerups": [
           "2x dmg powerup",
-          "powerup"
+          "powerup",
+          "gold shield"
         ],
         "roles": [
           "artillery"
@@ -330,7 +337,10 @@
           "dusey",
           "sgt walburn",
           "alzen",
-          "ataque"
+          "ataque",
+          "titanpower123",
+          "majkyn",
+          "salmon eater"
         ],
         "modes": [
           "brawl",
@@ -382,10 +392,18 @@
           "hook",
           "rescue beam",
           "sticky bomb",
-          "uppercut"
+          "uppercut",
+          "death slam",
+          "ground pound",
+          "flog",
+          "graves wall",
+          "silence wave"
         ],
         "items": [
           "alchemical flask"
+        ],
+        "mechanics": [
+          "zipline"
         ]
       }
     },

@@ -266,6 +266,19 @@
         ],
         "bug": [
           "glitch"
+        ],
+        "Recon Mode": [
+          "recon"
+        ],
+        "hit reg": [
+          "hitreg"
+        ],
+        "frame drop": [
+          "fps drop"
+        ],
+        "premade": [
+          "6 stack",
+          "6stack"
         ]
       }
     }

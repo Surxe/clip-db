@@ -302,7 +302,8 @@
           "refresh"
         ],
         "roles": [
-          "artillery"
+          "artillery",
+          "brawl"
         ],
         "tactics": [
           "bait",
@@ -353,7 +354,6 @@
           "rnnad"
         ],
         "modes": [
-          "brawl",
           "spleef",
           "quantum core",
           "spearhead"

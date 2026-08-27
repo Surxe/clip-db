@@ -5,8 +5,8 @@
   "golden_set": "golden.jsonl",
   "n_cases": 15,
   "gate_metric": "micro_f1",
-  "micro_f1": 0.0,
-  "macro_f1": 0.0,
-  "exact_match_rate": 0.0,
+  "micro_f1": 0.9962,
+  "macro_f1": 0.9978,
+  "exact_match_rate": 0.9733,
   "proposed_tag_fp_rate": 0.0
 }

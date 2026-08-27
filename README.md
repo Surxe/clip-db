@@ -35,6 +35,38 @@ for the model, how the reader flattens/renders it, and how to add a new game.
 War Robots Frontiers tags are regenerated from source via
 `scripts/extract_wrf_tags.py`.
 
+## Evaluation
+
+The classifier is regression-tested against a hand-labeled golden set with a real
+precision/recall harness — because the output is structured and constrained to the
+vocabulary, quality is a measured number, not a vibe. Latest baseline
+(`evals/baseline.json`, `claude-sonnet-4-5`, 15 cases × 5 runs each):
+
+| Metric | Score |
+|--|--|
+| **Micro-F1** (tag-level) | **0.996** |
+| Macro-F1 | 0.998 |
+| Exact-match rate (whole clip correct) | 0.973 |
+| Precision (all tags) | 1.000 — no wrong or invented tags |
+| Proposed-tag false-positive rate | 0.000 |
+
+What the harness (`evals/run_eval.py`) actually does:
+
+- **Golden set** (`evals/golden.jsonl`) mixes literal cases, meaning-not-string cases
+  (`"whiffed everything"` → `fail`, not a substring match), and alias/implication
+  expansion (`"cage trap"` → `snake catcher` → its module `garuda`).
+- **Regression gate** — `--gate` exits non-zero if micro-F1 falls below the stored
+  baseline, so a prompt or model change can't silently degrade tagging.
+- **Nondeterminism is measured, not ignored** — each case runs N times; the harness
+  reports per-run F1 variance (mean 0.996, stdev 0.005) and a per-case stability rate.
+- **Token-free reruns** — every model call is cached per run, so re-scoring iterates
+  for free and only a deliberate re-collect spends model budget.
+
+```bash
+.venv/bin/python evals/run_eval.py --runs 5            # score against the golden set
+.venv/bin/python evals/run_eval.py --runs 5 --gate     # regression gate vs baseline.json
+```
+
 ## Asset model
 
 One logical asset per clip: a split-audio **master** (source of truth) plus an optional

@@ -1,0 +1,15 @@
+{"id": "c00", "description": "railgun sniping across the map for a clean double kill", "game": "War Robots Frontiers", "expected_tags": ["war robots frontiers", "railgun", "double kill"]}
+{"id": "c01", "description": "bayonet 1v1 duel, clutch win at the end", "game": "War Robots Frontiers", "expected_tags": ["war robots frontiers", "bayonet", "1v1", "clutch"]}
+{"id": "c02", "description": "orkan burst melts an enemy titan", "game": "War Robots Frontiers", "expected_tags": ["war robots frontiers", "orkan", "titan"]}
+{"id": "c03", "description": "punisher spray for a quad kill highlight", "game": "War Robots Frontiers", "expected_tags": ["war robots frontiers", "punisher", "quad kill", "highlight"]}
+{"id": "c04", "description": "shocktrain chaining across the whole lineup, triple kill", "game": "War Robots Frontiers", "expected_tags": ["war robots frontiers", "shocktrain", "triple kill"]}
+{"id": "c05", "description": "wyrm pull then whiffed everything, funny fail", "game": "War Robots Frontiers", "expected_tags": ["war robots frontiers", "wyrm", "fail", "funny"]}
+{"id": "c06", "description": "thunder 2 shot the alpha for a double kill", "game": "War Robots Frontiers", "expected_tags": ["war robots frontiers", "thunder", "alpha", "double kill"]}
+{"id": "c07", "description": "full match as a brawler running magnetos", "game": "War Robots Frontiers", "expected_tags": ["war robots frontiers", "magneto", "full match", "brawl"]}
+{"id": "c08", "description": "1v4 retake to win the round, absolute clutch", "game": "generic", "expected_tags": ["clutch"]}
+{"id": "c09", "description": "completely whiffed everything and threw the round", "game": "generic", "expected_tags": ["fail"]}
+{"id": "c10", "description": "dropped the cage trap on them and the alpha snags the kill", "game": "War Robots Frontiers", "expected_tags": ["war robots frontiers", "snake catcher", "garuda", "alpha"]}
+{"id": "c11", "description": "pursuer flanking the backline invisible", "game": "War Robots Frontiers", "expected_tags": ["war robots frontiers", "pursuer", "invisible"]}
+{"id": "c12", "description": "raven and orkan combo, double kill into a triple kill", "game": "War Robots Frontiers", "expected_tags": ["war robots frontiers", "raven", "orkan", "double kill", "triple kill"]}
+{"id": "c13", "description": "trident and dragoon dual wield, clutch quad kill highlight", "game": "War Robots Frontiers", "expected_tags": ["war robots frontiers", "trident", "dragoon", "clutch", "quad kill", "highlight"]}
+{"id": "c14", "description": "bebop hook combo into a sticky bomb for the kill", "game": "Deadlock", "expected_tags": ["deadlock", "bebop", "hook", "sticky bomb"]}

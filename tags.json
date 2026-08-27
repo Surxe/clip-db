@@ -26,7 +26,8 @@
     "outplay",
     "flank",
     "escape",
-    "premade"
+    "premade",
+    "camper"
   ],
   "games": {
     "War Robots Frontiers": {
@@ -294,7 +295,8 @@
         "powerups": [
           "2x dmg powerup",
           "powerup",
-          "gold shield"
+          "gold shield",
+          "refresh"
         ],
         "roles": [
           "artillery"
@@ -353,7 +355,8 @@
           "quantum core"
         ],
         "moments": [
-          "rage quit"
+          "rage quit",
+          "ragdoll"
         ]
       }
     },
@@ -400,7 +403,8 @@
           "silence wave"
         ],
         "items": [
-          "alchemical flask"
+          "alchemical flask",
+          "vortex web"
         ],
         "mechanics": [
           "zipline"

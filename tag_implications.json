@@ -90,6 +90,9 @@
         "2x dmg powerup": [
           "powerup"
         ],
+        "refresh": [
+          "powerup"
+        ],
         "zenit": [
           "artillery"
         ],

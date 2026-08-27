@@ -347,7 +347,8 @@
           "hex",
           "revis",
           "troll hulk",
-          "ministry stat"
+          "ministry stat",
+          "rnnad"
         ],
         "modes": [
           "brawl",
@@ -372,6 +373,9 @@
           "Kate",
           "Marcus",
           "Sora"
+        ],
+        "ranks": [
+          "noachium"
         ]
       }
     },

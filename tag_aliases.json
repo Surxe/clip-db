@@ -282,6 +282,9 @@
         ],
         "zoning": [
           "area denial"
+        ],
+        "noachium": [
+          "noach"
         ]
       }
     }

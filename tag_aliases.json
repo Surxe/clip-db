@@ -279,6 +279,9 @@
         "premade": [
           "6 stack",
           "6stack"
+        ],
+        "zoning": [
+          "area denial"
         ]
       }
     }

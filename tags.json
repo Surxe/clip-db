@@ -27,7 +27,8 @@
     "flank",
     "escape",
     "premade",
-    "camper"
+    "camper",
+    "zoning"
   ],
   "games": {
     "War Robots Frontiers": {
@@ -343,17 +344,18 @@
           "titanpower123",
           "majkyn",
           "salmon eater",
-          "hex"
+          "hex",
+          "revis",
+          "troll hulk",
+          "ministry stat"
         ],
         "modes": [
           "brawl",
-          "spleef"
+          "spleef",
+          "quantum core"
         ],
         "units": [
           "titan"
-        ],
-        "objectives": [
-          "quantum core"
         ],
         "moments": [
           "rage quit",

@@ -25,6 +25,10 @@ class Config:
     semantic_top_k: int
     auto_merge_max_seconds: int
     forced_tags_path: Path | None = None
+    # Read-only save location (e.g. the NTFS share) clips are recorded into. The pipeline
+    # only reads it; mirror.py mirrors new masters from here into intake_dir. None disables
+    # the mirror (intake_dir is then authoritative, the pre-split behavior).
+    source_dir: Path | None = None
 
 
 def _path(env: str, default: str) -> Path:
@@ -36,9 +40,12 @@ def _path(env: str, default: str) -> Path:
 
 def load_config() -> Config:
     load_dotenv(override=False)  # populate os.environ from repo .env if present
-    intake_dir = _path("CLIP_INTAKE_DIR", "/mnt/os-shared/transfer/clips")
+    intake_dir = _path("CLIP_INTAKE_DIR", "/srv/dev/clips/intake")
+    source_raw = os.getenv("CLIP_SOURCE_DIR", "").strip()
+    source_dir = _path("CLIP_SOURCE_DIR", source_raw) if source_raw else None
     return Config(
         intake_dir=intake_dir,
+        source_dir=source_dir,
         library_dir=_path("CLIP_LIBRARY_DIR", "/srv/dev/clips/library"),
         index_path=_path("CLIP_INDEX_PATH", "/srv/dev/clips/index.sqlite"),
         tags_path=_path("CLIP_TAGS_PATH", "tags.json"),

@@ -29,6 +29,7 @@ from clip_core import descriptions, forced_tags, index, media, merge
 from clip_core import tags as tagmod
 from clip_core.classify import llm_classify_batch
 from clip_core.config import load_config
+from clip_core.intake_sync import sync_intake
 from clip_core.relations import TagRelations
 from clip_core.schema import connect
 
@@ -41,6 +42,10 @@ def main() -> None:
     args = ap.parse_args()
 
     cfg = load_config()
+    # Pull any newly-saved masters from the read-only source into intake first, so this
+    # ingest sees them (no-op when CLIP_SOURCE_DIR is unset). Never touches --dry-run's
+    # promise not to move/write clips.
+    sync_intake(cfg, dry_run=args.dry_run)
     vocab = tagmod.load_vocab(cfg.tags_path)
     relations = TagRelations.load(cfg.aliases_path, cfg.implications_path)
     conn = connect(cfg.index_path)

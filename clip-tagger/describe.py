@@ -30,6 +30,7 @@ import argparse
 from clip_core import descriptions, forced_tags, media
 from clip_core import tags as tagmod
 from clip_core.config import load_config
+from clip_core.intake_sync import sync_intake
 
 
 def _open_in_player(master: Path) -> None:
@@ -65,6 +66,10 @@ def main() -> None:
     args = ap.parse_args()
 
     cfg = load_config()
+    # describe is the first pipeline step, so mirror new masters from the read-only source
+    # into intake here too (no-op when CLIP_SOURCE_DIR is unset) -- so clips show up to be
+    # described without a separate manual copy step.
+    sync_intake(cfg)
 
     if args.force_tag:
         vocab = tagmod.load_vocab(cfg.tags_path)

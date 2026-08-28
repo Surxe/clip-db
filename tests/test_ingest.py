@@ -52,6 +52,8 @@ def env(tmp_path, monkeypatch):
         descriptions_path=desc_path,
         discord_queue_dir=tmp_path / "discord-queue",
         model="claude-test",
+        embed_model="all-MiniLM-L6-v2",
+        semantic_top_k=5,
         auto_merge_max_seconds=120,
     )
     mod = _load_ingest()

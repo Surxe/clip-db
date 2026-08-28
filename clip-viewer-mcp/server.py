@@ -23,6 +23,7 @@ sys.path.insert(0, str(_REPO / "clip-distributor"))     # sibling distributor mo
 from mcp.server import MCPServer  # official mcp SDK v2.x (renamed from FastMCP)
 
 from clip_core import discord_queue
+from clip_core import embed
 from clip_core import index
 from clip_core import merge as coremerge
 from clip_core import query as querymod
@@ -38,6 +39,13 @@ mcp = MCPServer("clip-viewer")
 
 def _conn():
     return connect(cfg.index_path)
+
+
+def _vec_conn():
+    """A connection with the sqlite-vec extension loaded and the vector table ensured."""
+    conn = connect(cfg.index_path)
+    embed.ensure_vec_table(conn)
+    return conn
 
 
 def _clip_dict(c: index.Clip) -> dict:
@@ -71,6 +79,27 @@ def query(expr: str) -> list[dict]:
     """
     conn = _conn()
     return [_clip_dict(c) for c in querymod.query(conn, expr)]
+
+
+@mcp.tool()
+def semantic_search(query: str, k: int = cfg.semantic_top_k) -> list[dict]:
+    """Find clips by MEANING using a natural-language query, e.g. 'that insane comeback on
+    ascent' or 'whiffed everything'. Returns the k closest clips, each with a `score`
+    (1.0 = identical meaning, ~0 = unrelated), best first.
+
+    Unlike `query` (exact tag/game matching), this matches semantically: a query can find a
+    clip whose description/tags never contain those words. Use `query` when you know the
+    exact tag; use this for fuzzy, natural-language recall. Clips must be embedded first
+    (scripts/embed_backfill.py); newly ingested clips are embedded automatically.
+    """
+    conn = _vec_conn()
+    hits = embed.semantic_search(conn, query, k)
+    out = []
+    for stem, score in hits:
+        clip = index.get_clip(conn, stem)
+        if clip is not None:  # skip any vector whose index row was deleted
+            out.append({**_clip_dict(clip), "score": round(score, 4)})
+    return out
 
 
 @mcp.tool()

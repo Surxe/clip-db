@@ -100,6 +100,12 @@ def main() -> None:
 
     for stem, clip, files in to_delete:
         index.delete_clip(conn, stem)
+        try:  # best-effort: drop the clip's semantic vector too, if the index exists
+            from clip_core import embed
+            embed.load_vec(conn)
+            embed.remove_clip(conn, stem)
+        except Exception:  # noqa: BLE001 -- no vector index / deps is fine, keep deleting
+            pass
         for f in files:
             try:
                 f.unlink()

@@ -17,16 +17,22 @@ Two projects over one shared core:
 ```
 clip_core/            # shared: config, tags vocab, sqlite index, media I/O, llm_classify,
                       #   query (exact) + embed/rag (semantic search + grounded answers)
-clip-tagger/          # ingest.py — batch: intake move + tag/categorize (auto-embeds new clips)
+clip-tagger/          # mirror.py — mirror new masters from the read-only source into intake
+                      # ingest.py — batch: intake move + tag/categorize (auto-embeds new clips)
 clip-viewer-mcp/      # server.py — stdio MCP: exact query, semantic_search, RAG ask
 clip-distributor/     # compress.py + share.py — size-fit a clip under the Discord cap, to clipboard
 ```
 
 ## Clip flow
 
-1. Record on Windows or Linux. A separate (user-owned) step drops clips into the
-   shared staging dir `os-shared/transfer/clips/` (`/mnt/os-shared/transfer/clips` on Linux).
-2. `clip-tagger/ingest.py` moves each **master** out of staging into the ext4 library,
+1. Record on Windows or Linux, saving clips into the **source dir** — the read-only NTFS
+   share `CLIP_SOURCE_DIR` (`/mnt/os-shared/transfer/clips`). The pipeline never writes
+   there. `clip-tagger/mirror.py` mirrors each new **master** from the source into the
+   writable ext4 **intake dir** (`CLIP_INTAKE_DIR`), skipping any already ingested (in the
+   library) or already staged — so re-runs bring only new saves. `describe.py` and
+   `ingest.py` run this mirror automatically at startup, so there's no manual copy step.
+   (Leave `CLIP_SOURCE_DIR` unset to skip the mirror and treat intake as authoritative.)
+2. `clip-tagger/ingest.py` moves each **master** out of intake into the ext4 library,
    probes metadata, classifies the description provided the user as user-in-the-loop against the vocab, 
    writes an index row, and generates its mixed-audio `*_merged.mp4` 
    in the library (short masters only, gated by

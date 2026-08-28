@@ -108,3 +108,13 @@ once, not per clip).
 The per-clip descriptions live in a manifest (`descriptions.json` in the intake dir by
 default; `CLIP_DESCRIPTIONS_PATH` to relocate) mapping asset stem -> sentence — hand-write it
 for a backlog, or use `describe.py` interactively.
+
+## Related: serverless cloud port
+
+The same constrained classifier also runs as a serverless AWS service in
+**[clip-classifier-aws](https://github.com/Surxe/clip-classifier-aws)** — `clip_core`'s
+`classify.py` / `tags.py` / `tags.json` ported onto Amazon Bedrock (Claude) behind AWS
+Lambda + API Gateway, packaged as a container image and provisioned with AWS SAM. Only the
+model runner changes (the local `claude` CLI call becomes a Bedrock `InvokeModel` call);
+the system prompt, JSON schema, and vocabulary are identical. It's a portfolio/learning
+build — deployed on demand, torn down when idle.

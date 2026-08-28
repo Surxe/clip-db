@@ -1,15 +1,24 @@
 # clip-db
 
 Tag, categorize, and query gaming clips. Controlled-vocabulary tagging where an LLM
-maps a short free-text description onto a fixed tag list (`tags.json`) — no fuzzy
-matching, no frame/audio AI. Batch tagging is a script; querying is a local MCP.
+maps a short free-text description onto a fixed tag list (`tags.json`) — the tagging is
+exact and constrained, no frame/audio AI. Batch tagging is a script; querying is a local
+MCP offering both exact tag search and semantic, meaning-based search.
+
+> **Retrieval-augmented generation (RAG) over the clip corpus.** Each clip's
+> description + tags are embedded with a local, frozen sentence-transformers model into a
+> [`sqlite-vec`](https://github.com/asg017/sqlite-vec) index living beside the SQLite clip
+> index; a natural-language question runs **cosine top-k retrieval**, then Claude
+> **synthesizes a grounded answer that cites the clips it used** — retrieval and generation
+> both exposed as MCP tools. See **[Semantic search & Q&A (RAG)](#semantic-search--qa-rag)**.
 
 Two projects over one shared core:
 
 ```
-clip_core/            # shared: config, tags vocab, sqlite index, media I/O, llm_classify, query
-clip-tagger/          # ingest.py — batch: intake move + tag/categorize
-clip-viewer-mcp/      # server.py — stdio MCP: query + retrieval
+clip_core/            # shared: config, tags vocab, sqlite index, media I/O, llm_classify,
+                      #   query (exact) + embed/rag (semantic search + grounded answers)
+clip-tagger/          # ingest.py — batch: intake move + tag/categorize (auto-embeds new clips)
+clip-viewer-mcp/      # server.py — stdio MCP: exact query, semantic_search, RAG ask
 clip-distributor/     # compress.py + share.py — size-fit a clip under the Discord cap, to clipboard
 ```
 
@@ -34,6 +43,38 @@ weapon/module/ability is a tag, organised into readability groups whose labels a
 for the model, how the reader flattens/renders it, and how to add a new game.
 War Robots Frontiers tags are regenerated from source via
 `scripts/extract_wrf_tags.py`.
+
+## Semantic search & Q&A (RAG)
+
+Exact tag search (`query`) is precise when you know the tag. Semantic search finds clips by
+**meaning** — *"that insane comeback on ascent"* reaches a clip tagged `clutch` it never
+shared a word with. Two MCP tools, both over the same vector index:
+
+- **`semantic_search(query, k)`** — retrieval. Embeds the query and returns the cosine
+  top-k clips by meaning, best first.
+- **`ask(question, k)`** — retrieval **+ generation** (the full RAG loop). Retrieves the
+  top-k, feeds them to Claude as grounded context, and returns a synthesized answer that
+  **cites the clip ids it used** — answering from the retrieved clips only, and saying so
+  when none fit. Citations are schema-pinned to the retrieved stems, so a cited clip is
+  always real.
+
+![clip-viewer semantic search in Claude Code](docs/clip-viewer-rag.png)
+
+How it works: each clip's `description + tags` is embedded with a local, frozen
+`sentence-transformers` model (`CLIP_EMBED_MODEL`, default `all-MiniLM-L6-v2`) — no API key,
+no per-call cost — into a `sqlite-vec` `vec0` table beside the clip index. Tags are embedded
+alongside the description so game jargon carries signal the free-text may lack. The model is
+**pinned** (recorded in the index): changing it invalidates every stored vector, so re-embed
+with `--all`. Generation reuses the same `claude` CLI path as tagging (subscription-billed).
+
+```bash
+.venv/bin/python scripts/embed_backfill.py            # embed clips missing a vector (incremental)
+.venv/bin/python scripts/embed_backfill.py --all      # re-embed everything (after a model change)
+```
+
+New clips are embedded automatically on ingest; the backfill is for the initial corpus or a
+model change. Retrieval quality is validated by hand on real queries; extending `evals/` with
+a recall@k retrieval metric is the natural next step.
 
 ## Evaluation
 
@@ -84,7 +125,9 @@ cp .env.example .env                            # then edit paths
 .venv/bin/pytest
 ```
 
-Paths are configured entirely via `.env` (see `.env.example`).
+Paths are configured entirely via `.env` (see `.env.example`). Semantic search pulls in
+`sentence-transformers` (and CPU `torch`) via `requirements.txt`; the first embedding call
+downloads the small model (`all-MiniLM-L6-v2`, ~90 MB) once, then runs fully local.
 Classification runs through the **`claude` CLI** (Claude Code in print mode), so it bills
 against your logged-in Claude subscription — no Anthropic API key. The CLI must be on `PATH`
 and authenticated (run `claude` once to log in). `CLIP_MODEL` (default `claude-sonnet-4-5`)
@@ -102,7 +145,8 @@ once, not per clip).
 .venv/bin/python clip-tagger/ingest.py --dry-run          # preview: one batched classify, no moves
 .venv/bin/python clip-tagger/ingest.py                    # classify all, move into library, index
 .venv/bin/python clip-tagger/review.py                    # confirm/fix tags; add proposed tags to the vocab
-.venv/bin/python clip-viewer-mcp/server.py                # run the MCP over stdio
+.venv/bin/python scripts/embed_backfill.py                # embed clips for semantic search (one-time / after adds)
+.venv/bin/python clip-viewer-mcp/server.py                # run the MCP over stdio (query, semantic_search, ask)
 ```
 
 The per-clip descriptions live in a manifest (`descriptions.json` in the intake dir by

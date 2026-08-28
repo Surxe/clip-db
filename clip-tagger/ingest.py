@@ -76,6 +76,18 @@ def main() -> None:
     items = [(media.stem_of(m), manifest[media.stem_of(m)]) for m in described]
     classified = llm_classify_batch(items, vocab, relations=relations, model=cfg.model) if items else {}
 
+    # Best-effort: keep the semantic-search vector index in step with new ingests, so
+    # freshly tagged clips are searchable without a manual backfill. This is auxiliary to
+    # tagging -- an embedding problem (e.g. deps not installed) must never break ingest.
+    vec_ready = False
+    if not args.dry_run:
+        try:
+            from clip_core import embed
+            embed.ensure_vec_table(conn)
+            vec_ready = True
+        except Exception as e:  # noqa: BLE001 -- degrade gracefully, don't fail the pipeline
+            print(f"  (semantic index unavailable, skipping embeddings: {e})")
+
     proposals: dict[str, str] = {}
     for m in ingest_masters:
         stem = media.stem_of(m)
@@ -109,18 +121,21 @@ def main() -> None:
 
         master_dst = media.move_into_library(m, cfg.library_dir)
         merged_dst = media.move_into_library(merged_src, cfg.library_dir) if has_merged else None
-        index.upsert_clip(
-            conn,
-            index.Clip(
-                stem=stem,
-                master_path=str(master_dst),
-                merged_path=str(merged_dst) if merged_dst else None,
-                date=media.resolve_date(master_dst, stem),
-                duration=duration,
-                description=description,
-                tags=tags,
-            ),
+        clip_obj = index.Clip(
+            stem=stem,
+            master_path=str(master_dst),
+            merged_path=str(merged_dst) if merged_dst else None,
+            date=media.resolve_date(master_dst, stem),
+            duration=duration,
+            description=description,
+            tags=tags,
         )
+        index.upsert_clip(conn, clip_obj)
+        if vec_ready:
+            try:
+                embed.index_clip(conn, clip_obj)
+            except Exception as e:  # noqa: BLE001 -- embedding is auxiliary to ingest
+                print(f"  (embedding failed for {stem}: {e})")
         if args.embed and tags:
             media.embed_tags(master_dst, tags)
         note = f" (proposed new tag: {proposed})" if proposed else ""

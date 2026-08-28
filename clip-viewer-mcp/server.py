@@ -23,9 +23,11 @@ sys.path.insert(0, str(_REPO / "clip-distributor"))     # sibling distributor mo
 from mcp.server import MCPServer  # official mcp SDK v2.x (renamed from FastMCP)
 
 from clip_core import discord_queue
+from clip_core import embed
 from clip_core import index
 from clip_core import merge as coremerge
 from clip_core import query as querymod
+from clip_core import rag as ragmod
 from clip_core.config import load_config
 from clip_core.schema import connect
 
@@ -38,6 +40,13 @@ mcp = MCPServer("clip-viewer")
 
 def _conn():
     return connect(cfg.index_path)
+
+
+def _vec_conn():
+    """A connection with the sqlite-vec extension loaded and the vector table ensured."""
+    conn = connect(cfg.index_path)
+    embed.ensure_vec_table(conn)
+    return conn
 
 
 def _clip_dict(c: index.Clip) -> dict:
@@ -71,6 +80,49 @@ def query(expr: str) -> list[dict]:
     """
     conn = _conn()
     return [_clip_dict(c) for c in querymod.query(conn, expr)]
+
+
+@mcp.tool()
+def semantic_search(query: str, k: int = cfg.semantic_top_k) -> list[dict]:
+    """Find clips by MEANING using a natural-language query, e.g. 'that insane comeback on
+    ascent' or 'whiffed everything'. Returns the k closest clips, each with a `score`
+    (1.0 = identical meaning, ~0 = unrelated), best first.
+
+    Unlike `query` (exact tag/game matching), this matches semantically: a query can find a
+    clip whose description/tags never contain those words. Use `query` when you know the
+    exact tag; use this for fuzzy, natural-language recall. Clips must be embedded first
+    (scripts/embed_backfill.py); newly ingested clips are embedded automatically.
+    """
+    conn = _vec_conn()
+    hits = embed.semantic_search(conn, query, k)
+    out = []
+    for stem, score in hits:
+        clip = index.get_clip(conn, stem)
+        if clip is not None:  # skip any vector whose index row was deleted
+            out.append({**_clip_dict(clip), "score": round(score, 4)})
+    return out
+
+
+@mcp.tool()
+def ask(question: str, k: int = cfg.semantic_top_k) -> dict:
+    """Answer a natural-language question about the clip library, grounded in retrieved clips
+    (RAG). Retrieves the k most relevant clips by meaning, then has Claude synthesise an answer
+    citing the clips it used, e.g. 'which clip was the wyrm goblin combo?' or 'did anyone whiff
+    an easy shot?'.
+
+    Unlike `semantic_search` (which returns raw clips) this returns a written answer plus the
+    clips it cited and the full retrieved candidate set. The model answers only from the
+    retrieved clips and says so when none fit. Makes one `claude` CLI call.
+    """
+    conn = _vec_conn()
+    answer, candidates = ragmod.ask(conn, question, k)
+    by_stem = {c.stem: c for c in candidates}
+    return {
+        "question": question,
+        "answer": answer.answer,
+        "cited_clips": [_clip_dict(by_stem[s]) for s in answer.clip_ids if s in by_stem],
+        "retrieved": [_clip_dict(c) for c in candidates],  # rank order (best first)
+    }
 
 
 @mcp.tool()

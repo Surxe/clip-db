@@ -1,3 +1,5 @@
 mcp[cli]>=2,<3
 python-dotenv
 httpx  # clip-distributor/post.py: multipart upload to a Discord webhook
+sentence-transformers  # local frozen embedding model for semantic search (pulls in CPU torch)
+sqlite-vec             # vector index (vec0 virtual table) living beside the clips index

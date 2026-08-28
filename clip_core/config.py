@@ -21,6 +21,8 @@ class Config:
     descriptions_path: Path
     discord_queue_dir: Path
     model: str
+    embed_model: str
+    semantic_top_k: int
     auto_merge_max_seconds: int
     forced_tags_path: Path | None = None
 
@@ -45,6 +47,8 @@ def load_config() -> Config:
         descriptions_path=_path("CLIP_DESCRIPTIONS_PATH", str(intake_dir / "descriptions.json")),
         discord_queue_dir=_path("CLIP_DISCORD_QUEUE_DIR", "/srv/dev/clips/discord-queue"),
         model=os.getenv("CLIP_MODEL", "claude-sonnet-4-5"),
+        embed_model=os.getenv("CLIP_EMBED_MODEL", "all-MiniLM-L6-v2"),
+        semantic_top_k=int(os.getenv("CLIP_SEMANTIC_TOP_K", "5")),
         auto_merge_max_seconds=int(os.getenv("CLIP_AUTO_MERGE_MAX_SECONDS", "120")),
         forced_tags_path=_path("CLIP_FORCED_TAGS_PATH", str(intake_dir / "forced_tags.json")),
     )

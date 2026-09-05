@@ -8,11 +8,18 @@ clip_core with clip-tagger, so the tag vocabulary and query semantics have one d
 The media-prep tools (merge_audio, prepare_share) do only DEV-side work on the dev-owned
 library. They deliberately stop short of delivery: copying to the clipboard and posting
 to a Discord webhook are ethan-side (the clipboard belongs to ethan's desktop session,
-and the webhook secret is ethan-owned and unreadable by dev). prepare_share therefore
-returns a ready file plus the `clip-post` command for ethan to run.
+and the webhook secret is ethan-owned and unreadable by dev).
+
+The two delivery tools bridge that boundary by emitting a command, never by crossing it:
+share_to_clipboard and post_to_discord each do the dev-side prep and return a ready-to-run
+`cmd` (`clip-copy ...` / `clip-post ...`) for ethan to run in his own session. An agent
+whose shell already lives in ethan's session may run that command directly; otherwise it
+prints it for ethan. (queue_discord_post is the alternate async path: it spools a job for
+the ethan-side watcher, so it needs no live session -- usable from the phone.)
 """
 from __future__ import annotations
 
+import shlex
 import sys
 from pathlib import Path
 
@@ -112,7 +119,9 @@ def ask(question: str, k: int = cfg.semantic_top_k) -> dict:
 
     Unlike `semantic_search` (which returns raw clips) this returns a written answer plus the
     clips it cited and the full retrieved candidate set. The model answers only from the
-    retrieved clips and says so when none fit. Makes one `claude` CLI call.
+    retrieved clips and says so (empty citations) when none of them fit -- that judgement is
+    the model's, not a relevance pre-filter. Makes one `claude` CLI call, skipped only when
+    retrieval returns nothing (empty corpus).
     """
     conn = _vec_conn()
     answer, candidates = ragmod.ask(conn, question, k)
@@ -173,8 +182,9 @@ def prepare_share(stem: str, cap_mb: int = 10, compress: bool = True, force: boo
       - compress=False: return the merged file uncompressed — for a Nitro-boosted server
         where the size cap is high and re-encoding is unnecessary.
 
-    Dev-side media prep ONLY. Delivery is ethan-side: paste the returned path into Discord,
-    or send it with the returned `clip_post_cmd` (`clip-post "<path>"`).
+    Dev-side media prep ONLY -- it returns a path, no delivery. To deliver, use a
+    command-emit tool instead: share_to_clipboard (paste into Discord) or post_to_discord
+    (webhook), which prep AND hand back the ethan-side command to run.
     """
     conn = _conn()
     clip = _clip_or_raise(conn, stem)
@@ -205,7 +215,6 @@ def prepare_share(stem: str, cap_mb: int = 10, compress: bool = True, force: boo
         "out_height": result.out_height,
         "out_fps": result.out_fps,
         "video_kbps": result.video_kbps,
-        "clip_post_cmd": f'clip-post "{result.dst}"',
     }
 
 
@@ -249,6 +258,88 @@ def queue_discord_post(stem: str, message: str | None = None, cap_mb: int = 10) 
         "under_cap": result.under_cap,
         "message": message,
         "note": "queued for the ethan-side watcher to post via clip-post; upload happens asynchronously",
+    }
+
+
+def _prep_rendition(conn, stem: str, cap_mb: int, compress: bool, *, require_under_cap: bool):
+    """Dev-side prep shared by the command-emit delivery tools: merge, then optionally
+    compress a clip to fit cap_mb. Returns (merged, result); result is None when
+    compress=False. Raises if require_under_cap and the compressed rendition still exceeds
+    the cap, so we never emit a delivery command that is doomed to fail on the ethan side.
+    """
+    clip = _clip_or_raise(conn, stem)
+    merged = coremerge.merge_master(conn, clip.master_path, force=False)
+    if not compress:
+        return merged, None
+    cap_bytes = cap_mb * 1024 * 1024
+    out_dir = Path(_default_out_dir(cfg.library_dir))
+    out_dir.mkdir(parents=True, exist_ok=True)
+    dst = out_dir / _share_name(merged.stem, cap_bytes)
+    result = compress_for_share(merged.merged_path, dst, cap_bytes=cap_bytes)
+    if require_under_cap and not result.under_cap:
+        raise ValueError(
+            f"compressed rendition is still over the {cap_mb} MiB cap "
+            f"({result.out_size} bytes) -- trim the clip or raise cap_mb (boosted server)"
+        )
+    return merged, result
+
+
+@mcp.tool()
+def share_to_clipboard(stem: str, cap_mb: int = 10, compress: bool = True) -> dict:
+    """Prep a clip and emit the ethan-side command that puts it on the clipboard to paste
+    into Discord.
+
+    Command-emit only: the MCP runs as dev and does the media prep (merge + optional
+    compress to fit cap_mb), but the clipboard belongs to ethan's Wayland session, so dev
+    cannot set it. Returns `cmd` (`clip-copy "<path>"`) for ethan to run -- an agent whose
+    shell is in ethan's session may run it directly; otherwise print it for ethan to run,
+    then paste into Discord with Ctrl+V.
+
+    compress=False emits the uncompressed merged file (for a Nitro-boosted server).
+    """
+    conn = _conn()
+    merged, result = _prep_rendition(conn, stem, cap_mb, compress, require_under_cap=compress)
+    share_path = result.dst if result else merged.merged_path
+    return {
+        "stem": merged.stem,
+        "share_path": str(share_path),
+        "compressed": bool(result),
+        "out_size": result.out_size if result else None,
+        "under_cap": result.under_cap if result else None,
+        "cmd": f"clip-copy {shlex.quote(str(share_path))}",
+        "runs_as": "ethan",
+        "note": "dev prepped the file; run `cmd` in ethan's desktop session (clip-copy puts "
+                "it on the clipboard), then paste into Discord with Ctrl+V",
+    }
+
+
+@mcp.tool()
+def post_to_discord(stem: str, message: str | None = None, cap_mb: int = 10) -> dict:
+    """Prep a clip and emit the ethan-side command that posts it to Discord now.
+
+    Command-emit only: the MCP runs as dev and does the media prep (merge + compress to fit
+    cap_mb), but the webhook secret is ethan-owned and unreadable by dev. Returns `cmd`
+    (`clip-post "<path>" [-m ...]`) for ethan to run -- an agent whose shell is in ethan's
+    session may run it directly; otherwise print it for ethan.
+
+    For a fire-and-forget path that needs no live session (e.g. from the phone), use
+    queue_discord_post instead -- it spools a job for the ethan-side watcher.
+    """
+    conn = _conn()
+    merged, result = _prep_rendition(conn, stem, cap_mb, compress=True, require_under_cap=True)
+    cmd = f"clip-post {shlex.quote(str(result.dst))}"
+    if message:
+        cmd += f" -m {shlex.quote(message)}"
+    return {
+        "stem": merged.stem,
+        "share_path": str(result.dst),
+        "out_size": result.out_size,
+        "under_cap": result.under_cap,
+        "message": message,
+        "cmd": cmd,
+        "runs_as": "ethan",
+        "note": "dev prepped the file; run `cmd` in ethan's session to post now, or use "
+                "queue_discord_post for the async watcher path",
     }
 
 

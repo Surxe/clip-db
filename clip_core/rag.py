@@ -76,8 +76,11 @@ def ask(
 
     Returns the `Answer` plus the retrieved candidate clips (in rank order) so callers can
     show the context the answer stood on. Pass `runner` to inject a stub (tests); the default
-    shells out to the `claude` CLI. Retrieval always runs; generation is skipped (no CLI call)
-    when nothing was retrieved.
+    shells out to the `claude` CLI. Retrieval always runs; the CLI call is skipped only when
+    retrieval returns no candidates at all (empty/too-small corpus) -- NOT when the hits are
+    merely unrelated. Nearest-neighbour returns the top-k regardless of relevance, so judging
+    that none of the retrieved clips actually fit is the model's job (an empty `clip_ids`), and
+    that still costs the one call.
     """
     hits = embed.semantic_search(conn, question, k)
     candidates = [c for c in (index.get_clip(conn, stem) for stem, _ in hits) if c is not None]

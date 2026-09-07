@@ -39,3 +39,42 @@ def test_load_save_roundtrip(tmp_path):
     data = _data()
     vocab_edit.save_tags(data, path)
     assert vocab_edit.load_tags(path) == data
+
+
+def test_add_implication_creates_and_dedupes():
+    data = {"games": {}}
+    added, skipped = vocab_edit.add_implication(data, "war robots frontiers", "sir tubins", ["notable-player"])
+    assert added == ["notable-player"] and skipped == []
+    added, skipped = vocab_edit.add_implication(data, "war robots frontiers", "sir tubins", ["Notable-Player", "reveal"])
+    assert added == ["reveal"] and skipped == ["Notable-Player"]  # case-insensitive dedupe, append order
+    block = data["games"]["war robots frontiers"][vocab_edit.IMPLIES_KEY]
+    assert block["sir tubins"] == ["notable-player", "reveal"]
+
+
+def test_add_implication_promotes_string_value():
+    data = {"games": {"g": {vocab_edit.IMPLIES_KEY: {"src": "one"}}}}
+    added, _ = vocab_edit.add_implication(data, "g", "src", ["two"])
+    assert added == ["two"]
+    assert data["games"]["g"][vocab_edit.IMPLIES_KEY]["src"] == ["one", "two"]
+
+
+def test_add_alias_creates_and_dedupes():
+    data = {"games": {}}
+    added, skipped = vocab_edit.add_alias(data, "war robots frontiers", "Incinerator", ["incin", "Incin"])
+    assert added == ["incin"] and skipped == ["Incin"]
+    assert data["games"]["war robots frontiers"]["aliases"]["Incinerator"] == ["incin"]
+
+
+def test_implication_and_alias_reject_commas():
+    with pytest.raises(ValueError):
+        vocab_edit.add_implication({"games": {}}, "g", "bad,src", ["x"])
+    with pytest.raises(ValueError):
+        vocab_edit.add_alias({"games": {}}, "g", "canon", ["bad,nick"])
+
+
+def test_relations_load_save_roundtrip(tmp_path):
+    path = tmp_path / "rel.json"
+    assert vocab_edit.load_relations(path) == {"games": {}}  # missing file -> empty
+    data = {"games": {"g": {vocab_edit.IMPLIES_KEY: {"a": ["b"]}}}}
+    vocab_edit.save_relations(data, path)
+    assert vocab_edit.load_relations(path) == data

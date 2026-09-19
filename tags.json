@@ -383,6 +383,9 @@
         ],
         "ranks": [
           "noachium"
+        ],
+        "kills": [
+          "game-ending-kill"
         ]
       }
     },

@@ -360,6 +360,7 @@
           "spearhead"
         ],
         "objectives": [
+          "core steal",
           "probe"
         ],
         "units": [

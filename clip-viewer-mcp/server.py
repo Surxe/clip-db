@@ -42,7 +42,18 @@ from compress import compress_for_share  # clip-distributor sibling
 from share import _default_out_dir, _share_name  # clip-distributor sibling
 
 cfg = load_config()
-mcp = MCPServer("clip-viewer")
+
+# Sent once at session init (clients surface it as server-level guidance), so the
+# delivery hint lives in one place instead of being repeated across every query tool's
+# docstring or return value.
+INSTRUCTIONS = (
+    "After answering a clip lookup (query / semantic_search / list_clips / ask), end with "
+    "ONE short line naming the two delivery routes, e.g.: \"Share: share_to_clipboard "
+    "(gives a `clip-copy` cmd to run, then Ctrl+V) or queue_discord_post (posts to "
+    "Discord automatically).\" One line, not a menu; skip it if a delivery is already "
+    "underway."
+)
+mcp = MCPServer("clip-viewer", instructions=INSTRUCTIONS)
 
 
 def _conn():
